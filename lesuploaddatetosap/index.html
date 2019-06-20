@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+    <meta name="keywords" content="iuu,jonah,哎呦呦,子非鱼安知鱼之乐">
+  
+  
+    <meta name="description" content="子非鱼，安知鱼之乐。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    LES上传业务交易数据至SAP |
+    
+    iUU</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-lesuploaddatetosap" class="article article-type-post" itemscope="" itemprop="blogPost" data-scroll-reveal="">
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      LES上传业务交易数据至SAP
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/lesuploaddatetosap/" class="article-date">
+  <time datetime="2018-07-25T10:51:11.000Z" itemprop="datePublished">2018-07-25</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Code/">Code</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <p><img src="https://iuu.me/wp-content/uploads/2018/07/backup-300x300.jpg" alt=""> 修改项目业务域代码备份 Win service:</p>
+<ol>
+<li><p>using CC.Utility.DataTrans;  </p>
+</li>
+<li><p>using LES.DAL.IFMManagement;  </p>
+</li>
+<li><p>using LES.DAL.LogManagement;  </p>
+</li>
+<li><p>using LES.DM.IFMDataModel;  </p>
+</li>
+<li><p>using Microsoft.LES.JinKang.Interface.ESB.Schema;  </p>
+</li>
+<li><p>using System;  </p>
+</li>
+<li><p>using System.Collections.Generic;  </p>
+</li>
+<li><p>using System.Configuration;  </p>
+</li>
+<li><p>using System.Linq;  </p>
+</li>
+<li><p>using System.Text;  </p>
+</li>
+<li><p>using System.Windows.Forms;  </p>
+</li>
+<li><p>using WinServiceTest.ServiceReference1;  </p>
+</li>
+<li><p>using WinServiceTest.Utils;  </p>
+</li>
+<li><p>namespace WinServiceTest.Services  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>publicclass TranslogTosapServices : BasicService  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>private TranslogTosapDAL dao = new TranslogTosapDAL();  </p>
+</li>
+<li><p>publicvoid Services(TextBox tbox)  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>ShowMessage(tbox, $”正在加载库存交易数据…”);  </p>
+</li>
+<li><p>var initData = GetInfoList();  </p>
+</li>
+<li><p>if (initData.Count &gt; 0)  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>ShowMessage(tbox, $”当前LES库存交易数据共有[{initData.Count}]条。”);  </p>
+</li>
+<li><p>var xml = SetData(initData);  </p>
+</li>
+<li><p>ShowMessage(tbox, $”库存交易数据XML生产完毕。”);  </p>
+</li>
+<li><p>CacheHelper.GetOrAddCacheItem(“TTS_XML”, () =&gt; { return xml; }, null);  </p>
+</li>
+<li><p>ShowMessage(tbox, “XML缓存完毕。”);  </p>
+</li>
+<li><p>ShowMessage(tbox, “正在尝试提交至ESB…”);  </p>
+</li>
+<li><p>var client = new BizTransUpload_pttClient();  </p>
+</li>
+<li><p>var result = client.BizTransUpload(new ServiceReference1.SoaHeader  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>TxnID = Guid.NewGuid().ToString(),  </p>
+</li>
+<li><p>TimeStamp = DateTime.Now.ToString(“yyyy-MM-dd HH:mm:ss.fff”)  </p>
+</li>
+<li><p>}, xml);  </p>
+</li>
+<li><p>ShowMessage(tbox, $”ESB RETURN-&gt;[{result.STATUS}]::{result.MESSAGE}。”);  </p>
+</li>
+<li><p>var redata = result.MESSAGE.ToObject<biztransuploadfeedbackcollection>();  </biztransuploadfeedbackcollection></p>
+</li>
+<li><p>redata.BizTrans.ToList().ForEach((BizTransType data) =&gt;   </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>// update status</p>
+</li>
+<li><p>var returnData = new SAPReturnData  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>Id = data.ID,  </p>
+</li>
+<li><p>State = data.STATUS,  </p>
+</li>
+<li><p>MessAge = data.MESSAGE  </p>
+</li>
+<li><p>};                   </p>
+</li>
+<li><p>dao.UpDataState7DTC(returnData, returnData.State.ToUpper() != “S” ? 3 : 1);  </p>
+</li>
+<li><p>// update interface log</p>
+</li>
+<li><p>var _log = new SapInterfaceLogDAL();  </p>
+</li>
+<li><p>var logInfo = new SapInterfaceLogInfo  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>ResponseTime = DateTime.Now,  </p>
+</li>
+<li><p>DealFlag = data.STATUS.ToUpper() == “S” ? 1 : 9,  </p>
+</li>
+<li><p>ReturnMessage = data.MESSAGE,  </p>
+</li>
+<li><p>ErrorMessage = data.MESSAGE,  </p>
+</li>
+<li><p>ModifiedTime = DateTime.Now  </p>
+</li>
+<li><p>};  </p>
+</li>
+<li><p>_log.Update(logInfo);  </p>
+</li>
+<li><p>});  </p>
+</li>
+<li><p>Log(xml);  </p>
+</li>
+<li><p>}  </p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>ShowMessage(tbox, $”当前没有库存交易数据,服务已停止。”);  </p>
+</li>
+<li><p>}  </p>
+</li>
+<li><p>}  </p>
+</li>
+<li><p>//LesToSap Loginfo</p>
+</li>
+<li><p>privatevoid Log(string xml)  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>var _les2sap = new LesSapRequestDAL();  </p>
+</li>
+<li><p>_les2sap.Add(new LES.DM.LogLES2SAPDataModel.LesSapRequestInfo  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>Biztransactionid = Guid.NewGuid().ToString(),  </p>
+</li>
+<li><p>Interfacecode = “ISAP005”,  </p>
+</li>
+<li><p>Interfaceinfo = “LES库存交易上传SAP(包括自材料入库、移库、领用等)”,  </p>
+</li>
+<li><p>Transactionid = Guid.NewGuid(),  </p>
+</li>
+<li><p>Xmldata = xml,  </p>
+</li>
+<li><p>Createdtime = DateTime.Now  </p>
+</li>
+<li><p>});  </p>
+</li>
+<li><p>}  </p>
+</li>
+<li><p>/// <summary></summary></p>
+</li>
+<li><p>/// 发送数据</p>
+</li>
+<li><p>/// </p>
+</li>
+<li><p>/// <param name="dest"></p>
+</li>
+<li><p>/// <param name="Name"></p>
+</li>
+<li><p>/// <param name="TableName"></p>
+</li>
+<li><p>/// <param name="ParName"></p>
+</li>
+<li><p>/// <param name="Data"></p>
+</li>
+<li><p>/// <param name="List"></p>
+</li>
+<li><p>privatestring SetData(List<translogtosapinfo> List)  </translogtosapinfo></p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>var BTUR = new List<biztransuploadtype>();  </biztransuploadtype></p>
+</li>
+<li><p>var result = new BizTransUploadCollection();  </p>
+</li>
+<li><p>List = List.OrderBy(v =&gt; v.ItemNo).ToList();  </p>
+</li>
+<li><p>foreach (var item in List)  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>BTUR.Add(new BizTransUploadType  </p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>SEQ_ID = item.Seq,  </p>
+</li>
+<li><p>BATCH_NO = item.BatchNo,  </p>
+</li>
+<li><p>WMTRAN_NO = item.WmtranNo,  </p>
+</li>
+<li><p>LES_YEAR = item.LesYear,  </p>
+</li>
+<li><p>LES_DOC = item.LesDoc,  </p>
+</li>
+<li><p>//DOC_DATE = item.DocDate.Value.ToString(“yyyymmdd”),</p>
+</li>
+<li><p>DOC_DATE = item.DocDate.Value.ToString(“yyyy-MM-dd”, System.Globalization.DateTimeFormatInfo.InvariantInfo),  </p>
+</li>
+<li><p>PLANT = item.Plant,  </p>
+</li>
+<li><p>STGE_LOC = item.StgeLoc,  </p>
+</li>
+<li><p>//MOVE_PLANT = item.MovePlant,</p>
+</li>
+<li><p>MOVE_STLOC = item.MoveStloc,  </p>
+</li>
+<li><p>VENDOR = item.Vendor,  </p>
+</li>
+<li><p>MATERIAL = item.Material,  </p>
+</li>
+<li><p>ENTRY_QNT = item.EntryQnt.ToString(),  </p>
+</li>
+<li><p>MOVE_TYPE = item.WmtranNo,  </p>
+</li>
+<li><p>COSTCENTER = item.Costcenter,  </p>
+</li>
+<li><p>AUFNR = item.Aufnr,  </p>
+</li>
+<li><p>MOVE_VEN = item.MoveVen,  </p>
+</li>
+<li><p>//ORDNO = item.OrderNo,</p>
+</li>
+<li><p>ORDNO = “”,  </p>
+</li>
+<li><p>//PSTNG_DATE = item.PstngDate?.ToString(“yyyymmdd”),</p>
+</li>
+<li><p>PSTNG_DATE = item.PstngDate?.ToString(“yyyy-MM-dd”, System.Globalization.DateTimeFormatInfo.InvariantInfo),  </p>
+</li>
+<li><p>OPERATION = item.Operation,  </p>
+</li>
+<li><p>AUART = item.Auart,  </p>
+</li>
+<li><p>PO_NUMBER = item.OrderNo,  </p>
+</li>
+<li><p>LES_ITEM = item.ItemNo,  </p>
+</li>
+<li><p>PO_ITEM = item.ItemNo  </p>
+</li>
+<li><p>});  </p>
+</li>
+<li><p>}  </p>
+</li>
+<li><p>result.BizTrans = BTUR.ToArray();  </p>
+</li>
+<li><p>return result.ToXml();  </p>
+</li>
+<li><p>}  </p>
+</li>
+<li><p>private List<translogtosapinfo> GetInfoList()  </translogtosapinfo></p>
+</li>
+<li><p>{  </p>
+</li>
+<li><p>dao.InitTable();  </p>
+</li>
+<li><p>return dao.GetInfoList();  </p>
+</li>
+<li><p>}  </p>
+</li>
+<li><p>}  </p>
+</li>
+<li><p>}  </p>
+</li>
+</ol>
+<p>PROC_LESTOSAP_TRANSLOG:</p>
+<ol>
+<li><p>ALTER proc [LES].[PROC_LESTOSAP_TRANSLOG]  </p>
+</li>
+<li><p>AS</p>
+</li>
+<li><p>BEGIN</p>
+</li>
+<li><p>BEGIN   TRY   </p>
+</li>
+<li><p>DECLARE @Tran VARCHAR(100);–移动类型</p>
+</li>
+<li><p>DECLARE @CHANGETran VARCHAR(100)–组合零件移动类型</p>
+</li>
+<li><p>DECLARE @TRAN_NO VARCHAR(100)  </p>
+</li>
+<li><p>BEGINTRANSACTION</p>
+</li>
+<li><p>TRUNCATETABLE LES.TG_WMM_SAP_TRAN_DETAIL_LOG  </p>
+</li>
+<li><p>–获取成品半成品入库移动类型</p>
+</li>
+<li><p>SELECTTOP 1  @TRAN_NO=PARAMETER1   </p>
+</li>
+<li><p>FROM  LES.TM_SYS_APPLICATION_CONFIGURATION   </p>
+</li>
+<li><p>WHERE  APPLICATION=’TranGoodTRan’  </p>
+</li>
+<li><p>–入库信息插入</p>
+</li>
+<li><p>INSERTINTO  les.TG_WMM_SAP_TRAN_DETAIL_LOG  </p>
+</li>
+<li><p>(  </p>
+</li>
+<li><p>RUNSHEET_SN,  </p>
+</li>
+<li><p>RUNSHEET_NO,  </p>
+</li>
+<li><p>TRAN_SHEET_ID,  </p>
+</li>
+<li><p>TRAN_TIME,  </p>
+</li>
+<li><p>PLANT,  </p>
+</li>
+<li><p>TRAN_NO,  </p>
+</li>
+<li><p>TARGET_ZONE,  </p>
+</li>
+<li><p>PO_SUPPLIER_NUM,  </p>
+</li>
+<li><p>PART_NO,  </p>
+</li>
+<li><p>NUM,  </p>
+</li>
+<li><p>COST_CODE,  </p>
+</li>
+<li><p>INTERNAL_CODE,  </p>
+</li>
+<li><p>PART_TYPE,  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>BARCODE_DATA,  </p>
+</li>
+<li><p>HU_BARCODE_DATA,  </p>
+</li>
+<li><p>BATCH_NO  </p>
+</li>
+<li><p>)  </p>
+</li>
+<li><p>SELECT</p>
+</li>
+<li><p>A.RECEIVE_ID,  </p>
+</li>
+<li><p>RECEIVE_NO,  </p>
+</li>
+<li><p>A.RECEIVE_ID,  </p>
+</li>
+<li><p>ISNULL(A.TRAN_TIME,GETDATE()),  </p>
+</li>
+<li><p>A.PLANT,  </p>
+</li>
+<li><p>A.TRAN_NO,  </p>
+</li>
+<li><p>B.TARGET_ZONE,  </p>
+</li>
+<li><p>B.PO_SUPPLIER_NUM,  </p>
+</li>
+<li><p>B.PART_NO,  </p>
+</li>
+<li><p>B.ACTUAL_QTY,  </p>
+</li>
+<li><p>COST_CODE,  </p>
+</li>
+<li><p>INTERNAL_CODE,  </p>
+</li>
+<li><p>B.PART_TYPE,  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>B.BARCODE_DATA,  </p>
+</li>
+<li><p>B.HU_ID,  </p>
+</li>
+<li><p>B.BATCH_NO  </p>
+</li>
+<li><p>FROM  LES.TT_WMM_RECEIVE_CONFIRM as A,  </p>
+</li>
+<li><p>LES.TT_WMM_RECEIVE_DETAIL_CONFIRM as B  </p>
+</li>
+<li><p>WHEREISNULL(A.ERP_FLAG,0)=0   </p>
+</li>
+<li><p>AND  CONFIRM_FLAG=2   </p>
+</li>
+<li><p>AND  A.RECEIVE_ID=B.RECEIVE_ID  </p>
+</li>
+<li><p>AND  A.TRAN_NO ISNOTNULL</p>
+</li>
+<li><p>ANDisnull(B.ACTUAL_QTY,0)&lt;&gt;0  </p>
+</li>
+<li><p>AND  B.PART_NO NOTIN (SELECT  PART_NO FROM  LES.TM_BAS_COMBINE_PARTS GROUPBY  PART_NO)–不是组合零件</p>
+</li>
+<li><p>AND A.TRAN_NO NOTIN(select item from Split(@TRAN_NO,’,’))  </p>
+</li>
+<li><p>–AND NOT EXISTS (SELECT 1 FROM LES.TM_BAS_COMBINE_PARTS WHERE PART_NO=B.PART_NO)</p>
+</li>
+<li><p>–更新入库表状态</p>
+</li>
+<li><p>UPDATE  A  </p>
+</li>
+<li><p>SET  ERP_FLAG=1  </p>
+</li>
+<li><p>FROM  LES.TT_WMM_RECEIVE_CONFIRM AS A INNERJOIN LES.TG_WMM_SAP_TRAN_DETAIL_LOG AS B  </p>
+</li>
+<li><p>ON A.RECEIVE_NO=B.RUNSHEET_NO  </p>
+</li>
+<li><p>WHEREISNULL(ERP_FLAG,0)=0 AND  CONFIRM_FLAG=2   </p>
+</li>
+<li><p>INSERTINTO  les.TG_WMM_SAP_TRAN_DETAIL_LOG  </p>
+</li>
+<li><p>(  </p>
+</li>
+<li><p>RUNSHEET_SN,  </p>
+</li>
+<li><p>RUNSHEET_NO,  </p>
+</li>
+<li><p>TRAN_SHEET_ID,  </p>
+</li>
+<li><p>TRAN_TIME,  </p>
+</li>
+<li><p>PLANT,  </p>
+</li>
+<li><p>TRAN_NO,  </p>
+</li>
+<li><p>TARGET_ZONE,  </p>
+</li>
+<li><p>PO_SUPPLIER_NUM,  </p>
+</li>
+<li><p>PART_NO,  </p>
+</li>
+<li><p>NUM,  </p>
+</li>
+<li><p>COST_CODE,  </p>
+</li>
+<li><p>INTERNAL_CODE,  </p>
+</li>
+<li><p>PART_TYPE,  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>BARCODE_DATA,  </p>
+</li>
+<li><p>BATCH_NO  </p>
+</li>
+<li><p>)  </p>
+</li>
+<li><p>SELECT</p>
+</li>
+<li><p>A.RECEIVE_ID,  </p>
+</li>
+<li><p>RECEIVE_NO,  </p>
+</li>
+<li><p>A.RECEIVE_ID,  </p>
+</li>
+<li><p>ISNULL(A.TRAN_TIME,GETDATE()),  </p>
+</li>
+<li><p>A.PLANT,  </p>
+</li>
+<li><p>A.TRAN_NO,  </p>
+</li>
+<li><p>B.TARGET_ZONE,  </p>
+</li>
+<li><p>B.PO_SUPPLIER_NUM,  </p>
+</li>
+<li><p>B.PART_NO,  </p>
+</li>
+<li><p>SUM(B.ACTUAL_QTY),  </p>
+</li>
+<li><p>COST_CODE,  </p>
+</li>
+<li><p>INTERNAL_CODE,  </p>
+</li>
+<li><p>B.PART_TYPE,  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>B.BARCODE_DATA,  </p>
+</li>
+<li><p>B.BATCH_NO  </p>
+</li>
+<li><p>FROM  LES.TT_WMM_RECEIVE_CONFIRM as A,  </p>
+</li>
+<li><p>LES.TT_WMM_RECEIVE_DETAIL_CONFIRM as B  </p>
+</li>
+<li><p>WHEREISNULL(A.ERP_FLAG,0)=0   </p>
+</li>
+<li><p>AND  CONFIRM_FLAG=2   </p>
+</li>
+<li><p>AND  A.RECEIVE_ID=B.RECEIVE_ID  </p>
+</li>
+<li><p>AND  A.TRAN_NO ISNOTNULL</p>
+</li>
+<li><p>ANDisnull(B.ACTUAL_QTY,0)&lt;&gt;0  </p>
+</li>
+<li><p>AND  B.PART_NO NOTIN (SELECT  PART_NO FROM  LES.TM_BAS_COMBINE_PARTS GROUPBY  PART_NO)–不是组合零件</p>
+</li>
+<li><p>AND A.TRAN_NO IN(select item from Split(@TRAN_NO,’,’))  </p>
+</li>
+<li><p>GROUPBY A.RECEIVE_ID,RECEIVE_NO,A.RECEIVE_ID,ISNULL(A.TRAN_TIME,GETDATE()),A.PLANT,A.TRAN_NO,  </p>
+</li>
+<li><p>B.TARGET_ZONE,B.PO_SUPPLIER_NUM,B.PART_NO,COST_CODE,INTERNAL_CODE,B.PART_TYPE,ORDER_NO,ITEM_NO,IDOC,  </p>
+</li>
+<li><p>B.BARCODE_DATA,B.BATCH_NO  </p>
+</li>
+<li><p>UPDATE  A  </p>
+</li>
+<li><p>SET  ERP_FLAG=1  </p>
+</li>
+<li><p>FROM  LES.TT_WMM_RECEIVE_CONFIRM AS A INNERJOIN LES.TG_WMM_SAP_TRAN_DETAIL_LOG AS B  </p>
+</li>
+<li><p>ON A.RECEIVE_NO=B.RUNSHEET_NO  </p>
+</li>
+<li><p>WHEREISNULL(ERP_FLAG,0)=0 AND  CONFIRM_FLAG=2   </p>
+</li>
+<li><p>–出库信息插入</p>
+</li>
+<li><p>INSERTINTO  LES.TG_WMM_SAP_TRAN_DETAIL_LOG  </p>
+</li>
+<li><p>(  </p>
+</li>
+<li><p>RUNSHEET_SN,  </p>
+</li>
+<li><p>RUNSHEET_NO,  </p>
+</li>
+<li><p>TRAN_SHEET_ID,  </p>
+</li>
+<li><p>TRAN_TIME,  </p>
+</li>
+<li><p>PLANT,  </p>
+</li>
+<li><p>TRAN_NO,  </p>
+</li>
+<li><p>TARGET_ZONE,  </p>
+</li>
+<li><p>PO_SUPPLIER_NUM,  </p>
+</li>
+<li><p>PART_NO,  </p>
+</li>
+<li><p>NUM,  </p>
+</li>
+<li><p>PART_TYPE,  </p>
+</li>
+<li><p>COST_CODE,  </p>
+</li>
+<li><p>INTERNAL_CODE,  </p>
+</li>
+<li><p>RELATED_SUPPLIER_NUM,  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>BARCODE_DATA,  </p>
+</li>
+<li><p>HU_BARCODE_DATA,  </p>
+</li>
+<li><p>BATCH_NO  </p>
+</li>
+<li><p>)  </p>
+</li>
+<li><p>SELECT</p>
+</li>
+<li><p>A.OUTPUT_ID,  </p>
+</li>
+<li><p>OUTPUT_NO,  </p>
+</li>
+<li><p>A.OUTPUT_ID,  </p>
+</li>
+<li><p>A.TRAN_TIME,  </p>
+</li>
+<li><p>A.PLANT,  </p>
+</li>
+<li><p>A.TRAN_NO,  </p>
+</li>
+<li><p>B.TARGET_ZONE,  </p>
+</li>
+<li><p>B.PO_SUPPLIER_NUM,  </p>
+</li>
+<li><p>B.PART_NO,  </p>
+</li>
+<li><p>B.ACTUAL_QTY,  </p>
+</li>
+<li><p>B.PART_TYPE,  </p>
+</li>
+<li><p>COST_CODE,  </p>
+</li>
+<li><p>INTERNAL_CODE,  </p>
+</li>
+<li><p>RES_SUPPLIER_NUM,  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>B.BARCODE_DATA,  </p>
+</li>
+<li><p>B.HU_ID,  </p>
+</li>
+<li><p>B.BATCH_NO  </p>
+</li>
+<li><p>FROM   LES.TT_WMM_OUTPUT_CONFIRM as A,  </p>
+</li>
+<li><p>LES.TT_WMM_OUTPUT_DETAIL_CONFIRM as B  </p>
+</li>
+<li><p>WHEREISNULL(A.ERP_FLAG,0)=0 AND  CONFIRM_FLAG=2 AND  A.OUTPUT_ID=B.OUTPUT_ID  </p>
+</li>
+<li><p>ANDisnull(B.ACTUAL_QTY,0)&lt;&gt;0  </p>
+</li>
+<li><p>AND  A.TRAN_NO ISNOTNULL</p>
+</li>
+<li><p>AND A.TRAN_NO NOTIN(SELECT TRAN_NO FROM LES.TM_WMM_TRANTYPE WHERE SHEET_TYPE IN(19,20,21,29) ANDISNULL(TRAN_NO,’’)&lt;&gt;’’)  </p>
+</li>
+<li><p>AND  B.PART_NO NOTIN (SELECT  PART_NO FROM  LES.TM_BAS_COMBINE_PARTS GROUPBY  PART_NO)  </p>
+</li>
+<li><p>–AND NOT EXISTS (SELECT 1 FROM LES.TM_BAS_COMBINE_PARTS WHERE PART_NO=B.PART_NO)</p>
+</li>
+<li><p>–出库信息插入 移动类型-单据类型(19,20,21,29)取值发货单‘源存储区’和‘目标存储区’ 库存地点转化取值‘存储区维护’的IM对应区</p>
+</li>
+<li><p>INSERTINTO  LES.TG_WMM_SAP_TRAN_DETAIL_LOG  </p>
+</li>
+<li><p>(  </p>
+</li>
+<li><p>RUNSHEET_SN,  </p>
+</li>
+<li><p>RUNSHEET_NO,  </p>
+</li>
+<li><p>TRAN_SHEET_ID,  </p>
+</li>
+<li><p>TRAN_TIME,  </p>
+</li>
+<li><p>PLANT,  </p>
+</li>
+<li><p>TRAN_NO,  </p>
+</li>
+<li><p>–TARGET_ZONE,</p>
+</li>
+<li><p>PO_SUPPLIER_NUM,  </p>
+</li>
+<li><p>PART_NO,  </p>
+</li>
+<li><p>NUM,  </p>
+</li>
+<li><p>PART_TYPE,  </p>
+</li>
+<li><p>COST_CODE,  </p>
+</li>
+<li><p>INTERNAL_CODE,  </p>
+</li>
+<li><p>RELATED_SUPPLIER_NUM,  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>BARCODE_DATA,  </p>
+</li>
+<li><p>HU_BARCODE_DATA,  </p>
+</li>
+<li><p>ZONE_NO,  </p>
+</li>
+<li><p>TARGET_ZONE,  </p>
+</li>
+<li><p>BATCH_NO  </p>
+</li>
+<li><p>)  </p>
+</li>
+<li><p>SELECT</p>
+</li>
+<li><p>A.OUTPUT_ID,  </p>
+</li>
+<li><p>OUTPUT_NO,  </p>
+</li>
+<li><p>A.OUTPUT_ID,  </p>
+</li>
+<li><p>A.TRAN_TIME,  </p>
+</li>
+<li><p>A.PLANT,  </p>
+</li>
+<li><p>A.TRAN_NO,  </p>
+</li>
+<li><p>–B.TARGET_ZONE,</p>
+</li>
+<li><p>B.PO_SUPPLIER_NUM,  </p>
+</li>
+<li><p>B.PART_NO,  </p>
+</li>
+<li><p>B.ACTUAL_QTY,  </p>
+</li>
+<li><p>B.PART_TYPE,  </p>
+</li>
+<li><p>COST_CODE,  </p>
+</li>
+<li><p>INTERNAL_CODE,  </p>
+</li>
+<li><p>RES_SUPPLIER_NUM,  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>B.BARCODE_DATA,  </p>
+</li>
+<li><p>B.HU_ID,  </p>
+</li>
+<li><p>C.IM_LOCATION,  </p>
+</li>
+<li><p>D.IM_LOCATION,  </p>
+</li>
+<li><p>B.BATCH_NO  </p>
+</li>
+<li><p>FROM   LES.TT_WMM_OUTPUT_CONFIRM as A,  </p>
+</li>
+<li><p>LES.TT_WMM_OUTPUT_DETAIL_CONFIRM as B  </p>
+</li>
+<li><p>JOIN LES.TM_WMM_ZONES C ONISNULL(B.ZONE_NO,’’)=C.ZONE_NO  </p>
+</li>
+<li><p>JOIN LES.TM_WMM_ZONES D ONISNULL(B.TARGET_ZONE,’’)=D.ZONE_NO  </p>
+</li>
+<li><p>WHEREISNULL(A.ERP_FLAG,0)=0 AND  CONFIRM_FLAG=2 AND  A.OUTPUT_ID=B.OUTPUT_ID  </p>
+</li>
+<li><p>ANDisnull(B.ACTUAL_QTY,0)&lt;&gt;0  </p>
+</li>
+<li><p>AND  A.TRAN_NO ISNOTNULL</p>
+</li>
+<li><p>AND A.TRAN_NO IN(SELECT TRAN_NO FROM LES.TM_WMM_TRANTYPE WHERE SHEET_TYPE IN(19,20,21,29) ANDISNULL(TRAN_NO,’’)&lt;&gt;’’)  </p>
+</li>
+<li><p>AND  B.PART_NO NOTIN (SELECT  PART_NO FROM  LES.TM_BAS_COMBINE_PARTS GROUPBY  PART_NO)  </p>
+</li>
+<li><p>–更新出库表状态</p>
+</li>
+<li><p>UPDATE  A  </p>
+</li>
+<li><p>SET  ERP_FLAG=1   </p>
+</li>
+<li><p>FROM  LES.TT_WMM_OUTPUT_CONFIRM AS A INNERJOIN LES.TG_WMM_SAP_TRAN_DETAIL_LOG AS B  </p>
+</li>
+<li><p>ON A.OUTPUT_NO=B.RUNSHEET_NO  </p>
+</li>
+<li><p>WHEREISNULL(ERP_FLAG,0)=0 and CONFIRM_FLAG=2  </p>
+</li>
+<li><p>–添加成本中心及内部订单</p>
+</li>
+<li><p>–update LES.TG_WMM_SAP_TRAN_DETAIL_LOG </p>
+</li>
+<li><p>–set COST_CODE=A.COST_CODE,</p>
+</li>
+<li><p>–INTERNAL_CODE=A.INTERNAL_CODE</p>
+</li>
+<li><p>–from LES.TT_WMM_TRAN_HEAD as A</p>
+</li>
+<li><p>–where RUNSHEET_NO=A.TRAN_SHEET_NO</p>
+</li>
+<li><p>–更新零件类型</p>
+</li>
+<li><p>–Update A</p>
+</li>
+<li><p>–SET PART_TYPE=ISNULL(p.PART_TYPE,0)</p>
+</li>
+<li><p>–FROM LES.TG_WMM_SAP_TRAN_DETAIL_LOG A</p>
+</li>
+<li><p>–  INNER JOIN LES.TT_SPM_SUPPLIER_PART_QUOTA p ON A.PLANT=p.PLANT AND A.PART_NO=p.PART_NO AND A.PO_SUPPLIER_NUM=p.SUPPLIER_NUM</p>
+</li>
+<li><p>–更新虚拟供应商   </p>
+</li>
+<li><p>UPDATE  B  </p>
+</li>
+<li><p>SET  PO_SUPPLIER_NUM=’’</p>
+</li>
+<li><p>FROM  LES.TM_BAS_SUPPLIER AS A INNERJOIN   LES.TG_WMM_SAP_TRAN_DETAIL_LOG as B on PO_SUPPLIER_NUM=A.SUPPLIER_NUM  </p>
+</li>
+<li><p>WHERE  SUPPLIER_TYPE&lt;&gt;1  </p>
+</li>
+<li><p>–插入到接口表</p>
+</li>
+<li><p>INSERTINTO  LES.TI_WMS_TRANSLOG_TOSAP  </p>
+</li>
+<li><p>(  </p>
+</li>
+<li><p>SEQ,  </p>
+</li>
+<li><p>BATCH_NO,  </p>
+</li>
+<li><p>WMTRAN_NO,  </p>
+</li>
+<li><p>LES_YEAR,  </p>
+</li>
+<li><p>DOC_DATE,  </p>
+</li>
+<li><p>PLANT,  </p>
+</li>
+<li><p>VENDOR,  </p>
+</li>
+<li><p>MATERIAL,  </p>
+</li>
+<li><p>ENTRY_QNT,  </p>
+</li>
+<li><p>SPEC_STOCK,  </p>
+</li>
+<li><p>MOVE_TYPE,  </p>
+</li>
+<li><p>MOVE_VEN,  </p>
+</li>
+<li><p>COSTCENTER,  </p>
+</li>
+<li><p>AUFNR,  </p>
+</li>
+<li><p>LES_DOC,  </p>
+</li>
+<li><p>PROCESS_FLAG,  </p>
+</li>
+<li><p>CREATE_USER,  </p>
+</li>
+<li><p>CREATE_DATE,  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>ORDER_TYPE,  </p>
+</li>
+<li><p>MEINS,  </p>
+</li>
+<li><p>BARCODE_DATA,  </p>
+</li>
+<li><p>HU_BARCODE_DATA,  </p>
+</li>
+<li><p>STGE_LOC,  </p>
+</li>
+<li><p>MOVE_STLOC  </p>
+</li>
+<li><p>)  </p>
+</li>
+<li><p>SELECT</p>
+</li>
+<li><p>dbo.GetDataString()+CAST(TRAN_DETAIL_ID ASVARCHAR),  </p>
+</li>
+<li><p>BATCH_NO,  </p>
+</li>
+<li><p>TRAN_NO,  </p>
+</li>
+<li><p>DATEPART(yyyy,ISNULL(TRAN_TIME,GETDATE())),  </p>
+</li>
+<li><p>TRAN_TIME,  </p>
+</li>
+<li><p>PLANT,  </p>
+</li>
+<li><p>PO_SUPPLIER_NUM,  </p>
+</li>
+<li><p>PART_NO,  </p>
+</li>
+<li><p>NUM,  </p>
+</li>
+<li><p>PART_TYPE,  </p>
+</li>
+<li><p>TRAN_NO,  </p>
+</li>
+<li><p>RELATED_SUPPLIER_NUM,  </p>
+</li>
+<li><p>COST_CODE,  </p>
+</li>
+<li><p>INTERNAL_CODE,  </p>
+</li>
+<li><p>RUNSHEET_NO,  </p>
+</li>
+<li><p>0 AS PROCESS_FLAG,  </p>
+</li>
+<li><p>‘SAP’,  </p>
+</li>
+<li><p>GETDATE(),  </p>
+</li>
+<li><p>ORDER_NO,  </p>
+</li>
+<li><p>ITEM_NO,  </p>
+</li>
+<li><p>IDOC,  </p>
+</li>
+<li><p>‘1’ AS ORDER_TYPE,  </p>
+</li>
+<li><p>(SELECT (SELECT MEASURING_UNIT_NO FROM [LES].[TM_BAS_MEASURING_UNIT] WHERE MEASURING_UNIT = PART.PART_UNITS) FROM [LES].[TM_BAS_MAINTAIN_PARTS] AS PART  </p>
+</li>
+<li><p>WHERE PART_NO=A.PART_NO) MEINS,  </p>
+</li>
+<li><p>BARCODE_DATA,  </p>
+</li>
+<li><p>HU_BARCODE_DATA,  </p>
+</li>
+<li><p>A.ZONE_NO,  </p>
+</li>
+<li><p>A.TARGET_ZONE  </p>
+</li>
+<li><p>FROM  LES.TG_WMM_SAP_TRAN_DETAIL_LOG as A  </p>
+</li>
+<li><p>WHEREisnull((select IM_TRAN from les.TM_WMM_TRANTYPE where TM_WMM_TRANTYPE.TRAN_NO=A.TRAN_NO),’’)&lt;&gt;’’</p>
+</li>
+<li><p>–添加SAP移动类型，仓库，目的仓库</p>
+</li>
+<li><p>UPDATE  LES.TI_WMS_TRANSLOG_TOSAP   </p>
+</li>
+<li><p>SET  MOVE_STLOC=DLOC,STGE_LOC=S_DLOC,WMTRAN_NO=IM_TRAN   </p>
+</li>
+<li><p>FROM LES.TM_WMM_TRANTYPE  </p>
+</li>
+<li><p>WHERE  LES.TM_WMM_TRANTYPE.WM_TRAN=WMTRAN_NO andisnull(PROCESS_FLAG,0)=0  </p>
+</li>
+<li><p>ANDISNULL(WMTRAN_NO,’’) NOTIN(SELECT TRAN_NO FROM LES.TM_WMM_TRANTYPE WHERE SHEET_TYPE IN(19,20,21,29) ANDISNULL(TRAN_NO,’’)&lt;&gt;’’)  </p>
+</li>
+<li><p>UPDATE  LES.TI_WMS_TRANSLOG_TOSAP   </p>
+</li>
+<li><p>SET WMTRAN_NO=IM_TRAN   </p>
+</li>
+<li><p>FROM LES.TM_WMM_TRANTYPE  </p>
+</li>
+<li><p>WHERE  LES.TM_WMM_TRANTYPE.WM_TRAN=WMTRAN_NO andisnull(PROCESS_FLAG,0)=0  </p>
+</li>
+<li><p>ANDISNULL(WMTRAN_NO,’’) IN(SELECT TRAN_NO FROM LES.TM_WMM_TRANTYPE WHERE SHEET_TYPE IN(19,20,21,29) ANDISNULL(TRAN_NO,’’)&lt;&gt;’’)  </p>
+</li>
+<li><p>–根据应用配置管理’SAPCHANGESTGE_LOC’理参数一里面移动类型把特殊库存改成自有</p>
+</li>
+<li><p>SELECTTOP 1  @CHANGETran=PARAMETER1 FROM  LES.[TM_SYS_APPLICATION_CONFIGURATION]   </p>
+</li>
+<li><p>WHERE  [APPLICATION] = ‘SAPCHANGESTGE_LOC’  </p>
+</li>
+<li><p>UPDATE  LES.TI_WMS_TRANSLOG_TOSAP   </p>
+</li>
+<li><p>SET  SPEC_STOCK=0 from LES.TM_WMM_TRANTYPE  </p>
+</li>
+<li><p>WHERE LES.TM_WMM_TRANTYPE.WM_TRAN=WMTRAN_NO ANDISNULL(PROCESS_FLAG,0)=0   </p>
+</li>
+<li><p>AND MOVE_TYPE IN (SELECT item FROM  Split(@CHANGETran,’,’))  </p>
+</li>
+<li><p>—-获取成品半成品入库移动类型</p>
+</li>
+<li><p>–SELECT TOP 1  @Tran=PARAMETER1 </p>
+</li>
+<li><p>–FROM  LES.TM_SYS_APPLICATION_CONFIGURATION </p>
+</li>
+<li><p>–WHERE  APPLICATION=’TranGoodTRan’</p>
+</li>
+<li><p>–修改成品半成品入库类型</p>
+</li>
+<li><p>UPDATE LES.TI_WMS_TRANSLOG_TOSAP  </p>
+</li>
+<li><p>SET ORDER_TYPE=0  </p>
+</li>
+<li><p>WHERE PROCESS_FLAG=0 AND  MOVE_TYPE IN (select item from Split(@TRAN_NO,’,’))   </p>
+</li>
+<li><p>–添加反入库类型备注  拆解</p>
+</li>
+<li><p>UPDATE LES.TI_WMS_TRANSLOG_TOSAP  </p>
+</li>
+<li><p>SET COMMENTS=’拆解’  </p>
+</li>
+<li><p>WHERE ORDER_TYPE=0 AND  PROCESS_FLAG=0 AND</p>
+</li>
+<li><p>MOVE_TYPE=(SELECTTOP 1 PARAMETER2 from LES.TM_SYS_APPLICATION_CONFIGURATION where APPLICATION=’TranGoodTRan’)   </p>
+</li>
+<li><p>–添加反入库类型备注  冲销</p>
+</li>
+<li><p>UPDATE LES.TI_WMS_TRANSLOG_TOSAP  </p>
+</li>
+<li><p>SET COMMENTS=’冲销’  </p>
+</li>
+<li><p>WHERE ORDER_TYPE=0 AND  PROCESS_FLAG=0 AND</p>
+</li>
+<li><p>MOVE_TYPE=(SELECTTOP 1 PARAMETER3 FROM  LES.TM_SYS_APPLICATION_CONFIGURATION where APPLICATION=’TranGoodTRan’)   </p>
+</li>
+<li><p>COMMITTRANSACTION</p>
+</li>
+<li><p>END  TRY   </p>
+</li>
+<li><p>BEGIN  CATCH   </p>
+</li>
+<li><p>–出错，则返回执行不成功，回滚事务</p>
+</li>
+<li><p>ROLLBACKTRANSACTION</p>
+</li>
+<li><p>–记录错误信息</p>
+</li>
+<li><p>INSERTINTO  [LES].[TS_SYS_EXCEPTION] (time_stamp, [application], [METHOD], class,  exception_message, error_code)  </p>
+</li>
+<li><p>SELECT  GETDATE(),’INTERFACE’,’LES.PROC_LESTOSAP_TRANSLOG’,’Procedure’,error_message(),ERROR_LINE()  </p>
+</li>
+<li><p>END   CATCH  </p>
+</li>
+<li><p>END</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://iuu.me/lesuploaddatetosap/" data-id="cjvp22zz2000osomhz3tknna1" class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/BACKUP/">BACKUP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/LES/">LES</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/servicesdependedon/" class="article-nav-link">
+        <strong class="article-nav-caption">Newer posts</strong>
+        <div class="article-nav-title">
+          
+            Windows服务依赖关系
+          
+        </div>
+      </a>
+    
+    
+      <a href="/pcspull/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">PCS拉动分析</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  
+
+</article>
+
+
+
+  <div id="lv-container" data-id="city" data-uid="MTAyMC80NDIzOS8yMDc3Mg==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+</div>
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+    <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2019 iUU</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="iUU"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archives</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>

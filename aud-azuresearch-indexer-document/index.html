@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+    <meta name="keywords" content="iuu,jonah,哎呦呦,子非鱼安知鱼之乐">
+  
+  
+    <meta name="description" content="子非鱼，安知鱼之乐。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    Add/Update/Delete AzureSearch Indexer Document |
+    
+    iUU</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-aud-azuresearch-indexer-document" class="article article-type-post" itemscope="" itemprop="blogPost" data-scroll-reveal="">
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Add/Update/Delete AzureSearch Indexer Document
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/aud-azuresearch-indexer-document/" class="article-date">
+  <time datetime="2018-03-21T12:59:28.000Z" itemprop="datePublished">2018-03-21</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Code/">Code</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <p><img src="https://iuu.me/wp-content/uploads/2018/07/azure-300x169.jpg" alt=""> AzureSearch过程中不能通过portal来删除indexer document中的内容。感觉非常不方便，portal只提供indexer的添加与删除。 根据项目需求需要动态add/update/delete indexer document。 MSDN中翻了很久，Azure提供了REST API和封装好的.Net SDK。 通过NuGet获取Microsoft.Azure.Search。</p>
+<ol>
+<li><p>publicclass PortalKBSearch    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>///     The action link index client.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>privatereadonly ISearchIndexClient actionLinkIndexClient;    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// The allkb index client.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>privatereadonly ISearchIndexClient allkbIndexClient;    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>///     The bot telemetry.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>privatereadonly IBotTelemetry botTelemetry;    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>///     The _search client.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>privatereadonly ISearchServiceClient searchClient;    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Initializes a new instance of the <see cref="”PortalKBSearch”/"> class.   </see></p>
+</li>
+<li><p>/// Initializes a new instance of the <see cref="”PortalKBSearch”/">  </see></p>
+</li>
+<li><p>///     class.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”searchServiceName”">  </p>
+</li>
+<li><p>/// The search Service Name.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”apiKey”">  </p>
+</li>
+<li><p>/// The api Key.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”allKnowledgeBaseIndexName”">  </p>
+</li>
+<li><p>/// The all Knowledge Base Index Name.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”actionLinkIndexName”">  </p>
+</li>
+<li><p>/// The action Link Index Name.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <exception cref="”System.Exception”">  </exception></p>
+</li>
+<li><p>/// <see langword="”throw”/"> exception  </see></p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>public PortalKBSearch(    </p>
+</li>
+<li><p>string searchServiceName,    </p>
+</li>
+<li><p>string apiKey,    </p>
+</li>
+<li><p>string allKnowledgeBaseIndexName,    </p>
+</li>
+<li><p>string actionLinkIndexName)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>botTelemetry = KnowledgeBotTelemetry.CreateDefault();    </p>
+</li>
+<li><p>// Create an HTTP reference to the catalog index  </p>
+</li>
+<li><p>searchClient = new SearchServiceClient(searchServiceName, new SearchCredentials(apiKey));    </p>
+</li>
+<li><p>allkbIndexClient = searchClient.Indexes.GetClient(allKnowledgeBaseIndexName);    </p>
+</li>
+<li><p>actionLinkIndexClient = searchClient.Indexes.GetClient(actionLinkIndexName);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch (Exception e)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>thrownew Exception(“Could not create PortalSearch client”, e);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>///     The run indexer.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <returns>  </returns></p>
+</li>
+<li><p>///     The <see cref="”System.Threading.Tasks.Task”"> .  </see></p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>public async Task RunIndexer()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var kbIndexers = (await searchClient.Indexers.ListAsync()).Indexers.Where(x =&gt; x.Name.StartsWith(“kb”))    </p>
+</li>
+<li><p>.ToArray();    </p>
+</li>
+<li><p>for (var i = 0; i &lt; kbIndexers.Length; i++)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>await searchClient.Indexers.RunAsync(kbIndexers[i].Name);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// 创建修改索引  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”index”">  </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>public async Task<indexer> CreateOrUpdateIndexer(Indexer index)    </indexer></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>return await searchClient.Indexers.CreateOrUpdateAsync(index);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch (Exception ex)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>thrownew Exception(“Create indexer failed”, ex);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// 检查索引是否存在  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”indexName”">  </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>public async Task<bool> IsExistIndexer(string indexName)    </bool></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>return await searchClient.Indexers.ExistsAsync(indexName);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch (Exception ex)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>thrownew Exception(“IsExist call failed”, ex);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// 删除索引  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”indexName”">  </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>public async Task DeleteIndexer(string indexName)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>await searchClient.Indexers.DeleteAsync(indexName);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch (Exception ex)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>thrownew Exception(“DeleteIndexer call failed”, ex);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// 创建或修改索引文档  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”model”">  </p>
+</li>
+<li><p>publicvoid CreateOrUpdateDocuments(List<portalkbsearchresult> model)    </portalkbsearchresult></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var batch = IndexBatch.MergeOrUpload(model);    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>allkbIndexClient.Documents.Index(batch);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch (IndexBatchException e)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>// Sometimes when your Search service is under load, indexing will fail for some of the documents in  </p>
+</li>
+<li><p>// the batch. Depending on your application, you can take compensating actions like delaying and  </p>
+</li>
+<li><p>// retrying. For this simple demo, we just log the failed document keys and continue.  </p>
+</li>
+<li><p>botTelemetry.TrackException(    </p>
+</li>
+<li><p>new BotException { Message = $“Failed to index some of the documents:{String.Join(“, “, e.IndexingResults.Where(r =&gt; !r.Succeeded).Select(r =&gt; r.Key))}”, Error = e });    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// 创建或修改索引文档  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”model”">  </p>
+</li>
+<li><p>publicvoid CreateOrUpdateDocumentsDynamic(List<document> model)    </document></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var batch = IndexBatch.MergeOrUpload(model);    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>allkbIndexClient.Documents.Index(batch);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch (IndexBatchException e)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>// Sometimes when your Search service is under load, indexing will fail for some of the documents in  </p>
+</li>
+<li><p>// the batch. Depending on your application, you can take compensating actions like delaying and  </p>
+</li>
+<li><p>// retrying. For this simple demo, we just log the failed document keys and continue.  </p>
+</li>
+<li><p>botTelemetry.TrackException(    </p>
+</li>
+<li><p>new BotException { Message = $“Failed to index some of the documents:{String.Join(“, “, e.IndexingResults.Where(r =&gt; !r.Succeeded).Select(r =&gt; r.Key))}”, Error = e });    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// 删除索引文档  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”model”">  </p>
+</li>
+<li><p>publicvoid DeleteDocuments(List<portalkbsearchresult> model)    </portalkbsearchresult></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var batch = IndexBatch.Delete(model);    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>allkbIndexClient.Documents.Index(batch);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch (IndexBatchException e)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>// Sometimes when your Search service is under load, indexing will fail for some of the documents in  </p>
+</li>
+<li><p>// the batch. Depending on your application, you can take compensating actions like delaying and  </p>
+</li>
+<li><p>// retrying. For this simple demo, we just log the failed document keys and continue.  </p>
+</li>
+<li><p>botTelemetry.TrackException(    </p>
+</li>
+<li><p>new BotException { Message = $“Failed to delete index some of the documents:{String.Join(“, “, e.IndexingResults.Where(r =&gt; !r.Succeeded).Select(r =&gt; r.Key))}”, Error = e });    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// 删除索引文档  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”key”">  </p>
+</li>
+<li><p>/// <param name="”keyValues”">  </p>
+</li>
+<li><p>publicvoid DeleteDocuments(string key, IEnumerable<string> keyValues)    </string></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var batch = IndexBatch.Delete(key,keyValues);    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>allkbIndexClient.Documents.Index(batch);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch (IndexBatchException e)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>// Sometimes when your Search service is under load, indexing will fail for some of the documents in  </p>
+</li>
+<li><p>// the batch. Depending on your application, you can take compensating actions like delaying and  </p>
+</li>
+<li><p>// retrying. For this simple demo, we just log the failed document keys and continue.  </p>
+</li>
+<li><p>botTelemetry.TrackException(    </p>
+</li>
+<li><p>new BotException { Message = $“Failed to delete index some of the documents:{String.Join(“, “, e.IndexingResults.Where(r =&gt; !r.Succeeded).Select(r =&gt; r.Key))}”, Error = e });    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+</ol>
+<p>Unit Tester:</p>
+<ol>
+<li><p>publicclass PortalKBSearchTests    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>[TestMethod()]    </p>
+</li>
+<li><p>publicvoid DeleteDocumentsTest()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var searchServiceName = “{AzureSearchName}”;    </p>
+</li>
+<li><p>var apiKey = “{AzureSearchApiKey}”;    </p>
+</li>
+<li><p>var IndexName = “{AzureSearchIndexName}”;    </p>
+</li>
+<li><p>var actionLinkIndexName = “{AzureSearchActionLinkInxerName}”;    </p>
+</li>
+<li><p>var search = new PortalKBSearch(searchServiceName, apiKey, IndexName, actionLinkIndexName);    </p>
+</li>
+<li><p>string[] array = Array.ConvertAll(Enumerable.Range(1, 1000).ToArray(), delegate (int s) { return Convert.ToString(s); });//每次只能批量删除1000条  </p>
+</li>
+<li><p>search.DeleteDocuments(“QuestionId”, array);//第一个参数为筛选匹配字段  </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>[TestMethod()]    </p>
+</li>
+<li><p>publicvoid CreateOrUpdateDocuments()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var searchServiceName = “{AzureSearchName}”;    </p>
+</li>
+<li><p>var apiKey = “{AzureSearchApiKey}”;    </p>
+</li>
+<li><p>var IndexName = “{AzureSearchIndexName}”;    </p>
+</li>
+<li><p>var actionLinkIndexName = “{AzureSearchActionLinkInxerName}”;    </p>
+</li>
+<li><p>var search = new PortalKBSearch(searchServiceName, apiKey, allknowledgeBaseIndexName, actionLinkIndexName);    </p>
+</li>
+<li><p>var item = new Document(); //使用Document继承Dictionary  </p>
+</li>
+<li><p>item.Add(“{Key}”, “{object value}”);    </p>
+</li>
+<li><p>search.CreateOrUpdateDocuments(new List<document>().Add(item)); //SDK中同时提供List<t>入参          </t></document></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://iuu.me/aud-azuresearch-indexer-document/" data-id="cjvp22zyp0006somh4wsmhmye" class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/azure/">azure</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/azure-search/">azure search</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/csharp/">csharp</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/document/">document</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/pcspull/" class="article-nav-link">
+        <strong class="article-nav-caption">Newer posts</strong>
+        <div class="article-nav-title">
+          
+            PCS拉动分析
+          
+        </div>
+      </a>
+    
+    
+      <a href="/luis-programmatic-apis-v2-0-helper/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">LUIS Programmatic APIs v2.0 Helper</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  
+
+</article>
+
+
+
+  <div id="lv-container" data-id="city" data-uid="MTAyMC80NDIzOS8yMDc3Mg==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+</div>
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+    <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2019 iUU</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="iUU"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archives</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>

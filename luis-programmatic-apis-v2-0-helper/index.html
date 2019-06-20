@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+    <meta name="keywords" content="iuu,jonah,哎呦呦,子非鱼安知鱼之乐">
+  
+  
+    <meta name="description" content="子非鱼，安知鱼之乐。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    LUIS Programmatic APIs v2.0 Helper |
+    
+    iUU</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-luis-programmatic-apis-v2-0-helper" class="article article-type-post" itemscope="" itemprop="blogPost" data-scroll-reveal="">
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      LUIS Programmatic APIs v2.0 Helper
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/luis-programmatic-apis-v2-0-helper/" class="article-date">
+  <time datetime="2018-02-02T13:02:41.000Z" itemprop="datePublished">2018-02-02</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Code/">Code</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <p><img src="https://iuu.me/wp-content/uploads/2018/07/luis-300x125.jpg" alt=""> 最近的项目中使用了微软认知服务系列提供的Language Understanding (LUIS)服务。 鉴于每次调整LUIS都需要到luis.ai进行相关调整感觉很麻烦而且不符合项目需求。 于是将LUIS提供的REST API封装为LUIS Services Helper以供项目自身调用。 LUIS REST API Document <a href="https://westus.dev.cognitive.microsoft.com/docs/services/5890b47c39e2bb17b84a55ff/operations/5890b47c39e2bb052c5b9c2f" target="_blank" rel="noopener">请戳这里</a> Model:</p>
+<ol>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis.Model    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass Entity    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring Id { get; set; }    </p>
+</li>
+<li><p>publicstring Name { get; set; }    </p>
+</li>
+<li><p>publiclong TypeId { get; set; }    </p>
+</li>
+<li><p>publicstring ReadableType { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>using System.Collections.Generic;    </p>
+</li>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis.Model    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass Example    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring Text { get; set; }    </p>
+</li>
+<li><p>publicstring IntentName { get; set; }    </p>
+</li>
+<li><p>public IEnumerable<entitylabel> EntityLabels { get; set; }    </entitylabel></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicclass JSONExample    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring Text { get; set; }    </p>
+</li>
+<li><p>publicstring Intent { get; set; }    </p>
+</li>
+<li><p>public IEnumerable<entitylabel> Entities { get; set; }    </entitylabel></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicclass EntityLabel    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring EntityName { get; set; }    </p>
+</li>
+<li><p>publicint StartCharIndex { get; set; }    </p>
+</li>
+<li><p>publicint EndCharIndex { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis.Model    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass Intent    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring Id { get; set; }    </p>
+</li>
+<li><p>publicstring Name { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>using System;    </p>
+</li>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis.Model    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass LuisApp    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring Id { get; set; }    </p>
+</li>
+<li><p>publicstring Name { get; set; }    </p>
+</li>
+<li><p>publicstring Description { get; set; }    </p>
+</li>
+<li><p>publicstring Culture { get; set; }    </p>
+</li>
+<li><p>publicstring UsageScenario { get; set; }    </p>
+</li>
+<li><p>publicstring Domain { get; set; }    </p>
+</li>
+<li><p>publicint VersionsCount { get; set; }    </p>
+</li>
+<li><p>public DateTime CreatedDateTime { get; set; }    </p>
+</li>
+<li><p>public Endpoints Endpoints { get; set; }    </p>
+</li>
+<li><p>publicint EndpointHitsCount { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicclass Endpoints    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>public Production Production { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicclass Production    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring VersionId { get; set; }    </p>
+</li>
+<li><p>publicbool IsStaging { get; set; }    </p>
+</li>
+<li><p>publicstring EndpointUrl { get; set; }    </p>
+</li>
+<li><p>publicstring EndpointRegion { get; set; }    </p>
+</li>
+<li><p>publicstring AssignedEndpointKey { get; set; }    </p>
+</li>
+<li><p>publicstring PublishedDateTime { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>using Newtonsoft.Json;    </p>
+</li>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis.Model    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass Publish    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring EndpointUrl { get; set; }    </p>
+</li>
+<li><p>[JsonProperty(“subscription-key”)]    </p>
+</li>
+<li><p>publicstring SubscriptionKey { get; set; }    </p>
+</li>
+<li><p>publicstring EndpointRegion { get; set; }    </p>
+</li>
+<li><p>publicbool IsStaging { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>using Newtonsoft.Json;    </p>
+</li>
+<li><p>using System;    </p>
+</li>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis.Model    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass Training    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring ModelId { get; set; }    </p>
+</li>
+<li><p>[JsonProperty(“details”)]    </p>
+</li>
+<li><p>public TrainingDetails Details { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicclass TrainingDetails    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicint StatusId { get; set; }    </p>
+</li>
+<li><p>publicstring Status { get; set; }    </p>
+</li>
+<li><p>publicint ExampleCount { get; set; }    </p>
+</li>
+<li><p>public DateTime? TrainingDateTime { get; set; }    </p>
+</li>
+<li><p>publicstring FailureReason { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis.Model    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass Utterance    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring UtteranceText { get; set; }    </p>
+</li>
+<li><p>publicint ExampleId { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+</ol>
+<p>ServiceClient:</p>
+<ol>
+<li><p>using Newtonsoft.Json;    </p>
+</li>
+<li><p>using Newtonsoft.Json.Serialization;    </p>
+</li>
+<li><p>using System;    </p>
+</li>
+<li><p>using System.Net.Http;    </p>
+</li>
+<li><p>using System.Net.Http.Headers;    </p>
+</li>
+<li><p>using System.Text;    </p>
+</li>
+<li><p>using System.Threading.Tasks;    </p>
+</li>
+<li><p>using System.Web.Configuration;    </p>
+</li>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass ServiceClient    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>privatestring BASE_URL = WebConfigurationManager.AppSettings[“LuisAPIDomain”] ?? “<a href="https://westus.api.cognitive.microsoft.com/luis/api/v2.0”" target="_blank" rel="noopener">https://westus.api.cognitive.microsoft.com/luis/api/v2.0”</a>;  </p>
+</li>
+<li><p>//private string BASE_URL = WebConfigurationManager.AppSettings[“LuisAPIDomain”] ?? “<a href="https://westus.api.cognitive.microsoft.com/luis/api/v2.0”" target="_blank" rel="noopener">https://westus.api.cognitive.microsoft.com/luis/api/v2.0”</a>;  </p>
+</li>
+<li><p>privatereadonlystring _subscriptionKey;    </p>
+</li>
+<li><p>public ServiceClient(string subscriptionKey) =&gt;    </p>
+</li>
+<li><p>_subscriptionKey = subscriptionKey;    </p>
+</li>
+<li><p>protected async Task<httpresponsemessage> Get(string path)    </httpresponsemessage></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>using (var client = new HttpClient())    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>client.DefaultRequestHeaders.Add(“Ocp-Apim-Subscription-Key”, _subscriptionKey);    </p>
+</li>
+<li><p>return await client.GetAsync($“{BASE_URL}{path}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>protected async Task<string> Post(string path)    </string></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>using (var client = new HttpClient())    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>client.DefaultRequestHeaders.Add(“Ocp-Apim-Subscription-Key”, _subscriptionKey);    </p>
+</li>
+<li><p>var response = await client.PostAsync($“{BASE_URL}{path}”, null);    </p>
+</li>
+<li><p>var responseContent = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>if (response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>return responseContent;    </p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(responseContent);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{exception.Error?.Message ?? exception.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>protected async Task<string> Post<trequest>(string path, TRequest requestBody)    </trequest></string></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>using (var client = new HttpClient())    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>using (var content = new ByteArrayContent(GetByteData(requestBody)))    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>client.DefaultRequestHeaders.Add(“Ocp-Apim-Subscription-Key”, _subscriptionKey);    </p>
+</li>
+<li><p>content.Headers.ContentType = new MediaTypeHeaderValue(“application/json”);    </p>
+</li>
+<li><p>var response = await client.PostAsync($“{BASE_URL}{path}”, content);    </p>
+</li>
+<li><p>var responseContent = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>if (response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>return responseContent;    </p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(responseContent);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{exception.Error?.Message ?? exception.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>protected async Task Put<trequest>(string path, TRequest requestBody)    </trequest></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>using (var client = new HttpClient())    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>using (var content = new ByteArrayContent(GetByteData(requestBody)))    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>client.DefaultRequestHeaders.Add(“Ocp-Apim-Subscription-Key”, _subscriptionKey);    </p>
+</li>
+<li><p>content.Headers.ContentType = new MediaTypeHeaderValue(“application/json”);    </p>
+</li>
+<li><p>var response = await client.PutAsync($“{BASE_URL}{path}”, content);    </p>
+</li>
+<li><p>if (!response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var responseContent = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(responseContent);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{exception.Error?.Message ?? exception.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>protected async Task Delete(string path)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>using (var client = new HttpClient())    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>client.DefaultRequestHeaders.Add(“Ocp-Apim-Subscription-Key”, _subscriptionKey);    </p>
+</li>
+<li><p>var response = await client.DeleteAsync($“{BASE_URL}{path}”);    </p>
+</li>
+<li><p>if (!response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var responseContent = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(responseContent);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{exception.Error?.Message ?? exception.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>privatebyte[] GetByteData<trequest>(TRequest requestBody)    </trequest></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var settings = new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() };    </p>
+</li>
+<li><p>var body = JsonConvert.SerializeObject(requestBody, settings);    </p>
+</li>
+<li><p>return Encoding.UTF8.GetBytes(body);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+</ol>
+<p>ServiceException:</p>
+<ol>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass ServiceException    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>public Error Error { get; set; }    </p>
+</li>
+<li><p>publicstring Message { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicclass Error    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstring Code { get; set; }    </p>
+</li>
+<li><p>publicstring Message { get; set; }    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+</ol>
+<p>Interface:</p>
+<ol>
+<li><p>using KnowledgeBot.Portal.Service.Luis.Model;    </p>
+</li>
+<li><p>using System.Collections.Generic;    </p>
+</li>
+<li><p>using System.Threading.Tasks;    </p>
+</li>
+<li><p>namespace KnowledgeBot.Portal.Service.Luis    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicinterface ILuisClientService    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Task&lt;IReadOnlyCollection<luisapp>&gt; GetAllAppsAsync();    </luisapp></p>
+</li>
+<li><p>Task<luisapp> GetAppByIdAsync(string id);    </luisapp></p>
+</li>
+<li><p>Task<luisapp> GetAppByNameAsync(string name);    </luisapp></p>
+</li>
+<li><p>Task<string> AddAppAsync(string name, string description, string culture, string usageScenario, string domain, string initialVersionId);    </string></p>
+</li>
+<li><p>Task RenameAppAsync(string id, string name, string description);    </p>
+</li>
+<li><p>Task DeleteAppAsync(string id);    </p>
+</li>
+<li><p>Task&lt;IReadOnlyCollection<intent>&gt; GetAllIntentsAsync(string appId, string appVersionId);    </intent></p>
+</li>
+<li><p>Task<intent> GetIntentByIdAsync(string id, string appId, string appVersionId);    </intent></p>
+</li>
+<li><p>Task<intent> GetIntentByNameAsync(string name, string appId, string appVersionId);    </intent></p>
+</li>
+<li><p>Task<string> AddIntentAsync(string name, string appId, string appVersionId);    </string></p>
+</li>
+<li><p>Task RenameIntentAsync(string id, string name, string appId, string appVersionId);    </p>
+</li>
+<li><p>Task DeleteIntentAsync(string id, string appId, string appVersionId);    </p>
+</li>
+<li><p>Task&lt;IReadOnlyCollection<entity>&gt; GetAllEntitiesAsync(string appId, string appVersionId);    </entity></p>
+</li>
+<li><p>Task<entity> GetEntityByIdAsync(string id, string appId, string appVersionId);    </entity></p>
+</li>
+<li><p>Task<entity> GetEntityByNameAsync(string name, string appId, string appVersionId);    </entity></p>
+</li>
+<li><p>Task<string> AddEntityAsync(string name, string appId, string appVersionId);    </string></p>
+</li>
+<li><p>Task RenameEntityAsync(string id, string name, string appId, string appVersionId);    </p>
+</li>
+<li><p>Task DeleteEntityAsync(string id, string appId, string appVersionId);    </p>
+</li>
+<li><p>Task<utterance> AddExampleAsync(string appId, string appVersionId, Example model);    </utterance></p>
+</li>
+<li><p>Task<trainingdetails> TrainAsync(string appId, string appVersionId);    </trainingdetails></p>
+</li>
+<li><p>Task&lt;IEnumerable<training>&gt; GetTrainingStatusListAsync(string appId, string appVersionId);    </training></p>
+</li>
+<li><p>Task<publish> PublishAsync(string appId, string appVersionId, bool isStaging, string region);    </publish></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+</ol>
+<p>Interface implement:</p>
+<ol>
+<li><p>using KnowledgeBot.Portal.Service.Luis;    </p>
+</li>
+<li><p>using KnowledgeBot.Portal.Service.Luis.Model;    </p>
+</li>
+<li><p>using Newtonsoft.Json;    </p>
+</li>
+<li><p>using System;    </p>
+</li>
+<li><p>using System.Collections.Generic;    </p>
+</li>
+<li><p>using System.Linq;    </p>
+</li>
+<li><p>using System.Threading.Tasks;    </p>
+</li>
+<li><p>namespace KnowledgeBot.Portal.Service    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicclass LuisClientService : ServiceClient, ILuisClientService    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>public LuisClientService(string subscriptionKey) : base(subscriptionKey) {    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>#region Apps  </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Lists all of the user applications  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <returns>A List of LUIS apps</returns>  </p>
+</li>
+<li><p>public async Task&lt;IReadOnlyCollection<luisapp>&gt; GetAllAppsAsync()    </luisapp></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var response = await Get($“/apps”);    </p>
+</li>
+<li><p>var content = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>if (response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject&lt;IReadOnlyCollection<luisapp>&gt;(content);    </luisapp></p>
+</li>
+<li><p>elseif (response.StatusCode != System.Net.HttpStatusCode.BadRequest)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(content);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{exception.Error.Code} – {exception.Error.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>returnnull;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Gets the application info  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”id”">app id  </p>
+</li>
+<li><p>/// <returns>LUIS app</returns>  </p>
+</li>
+<li><p>public async Task<luisapp> GetAppByIdAsync(string id)    </luisapp></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var response = await Get($“/apps/{id}”);    </p>
+</li>
+<li><p>var content = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>if (response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject<luisapp>(content);    </luisapp></p>
+</li>
+<li><p>elseif (response.StatusCode != System.Net.HttpStatusCode.BadRequest)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(content);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{exception.Error.Code} – {exception.Error.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>returnnull;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Gets the application info  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”name”">app name  </p>
+</li>
+<li><p>/// <returns>LUIS app</returns>  </p>
+</li>
+<li><p>public async Task<luisapp> GetAppByNameAsync(string name)    </luisapp></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var apps = await GetAllAppsAsync();    </p>
+</li>
+<li><p>return apps.FirstOrDefault(app =&gt; app.Name.Equals(name));    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Creates a new LUIS app and returns the id  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”name”">app name  </p>
+</li>
+<li><p>/// <param name="”description”">app description  </p>
+</li>
+<li><p>/// <param name="”culture”">app culture: ‘en-us’, ‘es-es’, ‘pt-br’ and others  </p>
+</li>
+<li><p>/// <param name="”usageScenario”">  </p>
+</li>
+<li><p>/// <param name="”domain”">  </p>
+</li>
+<li><p>/// <param name="”initialVersionId”">  </p>
+</li>
+<li><p>/// <returns>The ID of the created app</returns>  </p>
+</li>
+<li><p>public async Task<string> AddAppAsync(string name, string description, string culture, string usageScenario, string domain, string initialVersionId)    </string></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var app = new</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>name = name,    </p>
+</li>
+<li><p>description = description,    </p>
+</li>
+<li><p>culture = culture,    </p>
+</li>
+<li><p>usageScenario = usageScenario,    </p>
+</li>
+<li><p>domain = domain,    </p>
+</li>
+<li><p>initialVersionId = initialVersionId    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>var response = await Post($“/apps”, app);    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject<string>(response);    </string></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Change the name and description of LUIS app  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”id”">app id  </p>
+</li>
+<li><p>/// <param name="”name”">new app name  </p>
+</li>
+<li><p>/// <param name="”description”">new app description  </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>public async Task RenameAppAsync(string id, string name, string description)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var app = new</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>name = name,    </p>
+</li>
+<li><p>description = description    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>await Put($“/apps/{id}”, app);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Deletes an application  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”id”">app id  </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>public async Task DeleteAppAsync(string id)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>await Delete($“/apps/{id}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>#region Intents  </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Gets information about the intent models  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>A List of app intents</returns>  </p>
+</li>
+<li><p>public async Task&lt;IReadOnlyCollection<intent>&gt; GetAllIntentsAsync(string appId, string appVersionId)    </intent></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var response = await Get($“/apps/{appId}/versions/{appVersionId}/intents”);    </p>
+</li>
+<li><p>var content = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>if (response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject&lt;IReadOnlyCollection<intent>&gt;(content);    </intent></p>
+</li>
+<li><p>elseif (response.StatusCode != System.Net.HttpStatusCode.BadRequest)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(content);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{ exception.Error.Code} – { exception.Error.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>returnnull;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Gets information about the intent model  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”id”">intent id  </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>app intent</returns>  </p>
+</li>
+<li><p>public async Task<intent> GetIntentByIdAsync(string id, string appId, string appVersionId)    </intent></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var response = await Get($“/apps/{appId}/versions/{appVersionId}/intents/{id}”);    </p>
+</li>
+<li><p>var content = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>if (response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject<intent>(content);    </intent></p>
+</li>
+<li><p>elseif (response.StatusCode != System.Net.HttpStatusCode.BadRequest)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(content);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{ exception.Error.Code} – { exception.Error.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>returnnull;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Gets information about the intent model  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”name”">intent name  </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>app intent</returns>  </p>
+</li>
+<li><p>public async Task<intent> GetIntentByNameAsync(string name, string appId, string appVersionId)    </intent></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var apps = await GetAllIntentsAsync(appId, appVersionId);    </p>
+</li>
+<li><p>return apps.FirstOrDefault(intent =&gt; intent.Name.Equals(name));    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Creates a new app intent and returns the id  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”name”">intent name  </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>The ID of the created intent</returns>  </p>
+</li>
+<li><p>public async Task<string> AddIntentAsync(string name, string appId, string appVersionId)    </string></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var intent = new</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>name = name    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>var response = await Post($“/apps/{appId}/versions/{appVersionId}/intents”, intent);    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject<string>(response);    </string></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Change the name of app intent  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”id”">intent id  </p>
+</li>
+<li><p>/// <param name="”name”">new intent name  </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>public async Task RenameIntentAsync(string id, string name, string appId, string appVersionId)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var intent = new</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>name = name    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>await Put($“/apps/{appId}/versions/{appVersionId}/intents/{id}”, intent);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Deletes an intent classifier from the application  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”id”">intent id  </p>
+</li>
+<li><p>/// <param name="”appId”">app Id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>public async Task DeleteIntentAsync(string id, string appId, string appVersionId)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>await Delete($“/apps/{appId}/versions/{appVersionId}/intents/{id}”);z    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>#region Entities  </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Gets information about the entity models  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>A List of app entities</returns>  </p>
+</li>
+<li><p>public async Task&lt;IReadOnlyCollection<entity>&gt; GetAllEntitiesAsync(string appId, string appVersionId)    </entity></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var response = await Get($“/apps/{appId}/versions/{appVersionId}/entities”);    </p>
+</li>
+<li><p>var content = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>if (response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject&lt;IReadOnlyCollection<entity>&gt;(content);    </entity></p>
+</li>
+<li><p>elseif (response.StatusCode != System.Net.HttpStatusCode.BadRequest)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(content);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{ exception.Error.Code} – { exception.Error.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>returnnull;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Gets information about the entity model  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”id”">entity id  </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>app entity</returns>  </p>
+</li>
+<li><p>public async Task<entity> GetEntityByIdAsync(string id, string appId, string appVersionId)    </entity></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var response = await Get($“/apps/{appId}/versions/{appVersionId}/entities/{id}”);    </p>
+</li>
+<li><p>var content = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>if (response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject<entity>(content);    </entity></p>
+</li>
+<li><p>elseif (response.StatusCode != System.Net.HttpStatusCode.BadRequest)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(content);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{ exception.Error.Code} – { exception.Error.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>returnnull;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Gets information about the entity model  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”name”">entity name  </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>app entity</returns>  </p>
+</li>
+<li><p>public async Task<entity> GetEntityByNameAsync(string name, string appId, string appVersionId)    </entity></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var apps = await GetAllEntitiesAsync(appId, appVersionId);    </p>
+</li>
+<li><p>return apps.FirstOrDefault(Entity =&gt; Entity.Name.Equals(name));    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Creates a new app entity and returns the id  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”name”">entity name  </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>The ID of the created entity</returns>  </p>
+</li>
+<li><p>public async Task<string> AddEntityAsync(string name, string appId, string appVersionId)    </string></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var Entity = new</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>name = name    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>var response = await Post($“/apps/{appId}/versions/{appVersionId}/entities”, Entity);    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject<string>(response);    </string></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Change the name of app entity  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”id”">entity id  </p>
+</li>
+<li><p>/// <param name="”name”">new intent name  </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>public async Task RenameEntityAsync(string id, string name, string appId, string appVersionId)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var entity = new</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>name = name    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>await Put($“/apps/{appId}/versions/{appVersionId}/entities/{id}”, entity);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Deletes an entity extractor from the application  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”id”">entity id  </p>
+</li>
+<li><p>/// <param name="”appId”">app Id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>public async Task DeleteEntityAsync(string id, string appId, string appVersionId)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>await Delete($“/apps/{appId}/versions/{appVersionId}/entities/{id}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>#region examples  </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Adds a labeled example to the application  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <param name="”model”">object containing the example label  </p>
+</li>
+<li><p>/// <returns>A object of utterance created</returns>  </p>
+</li>
+<li><p>public async Task<utterance> AddExampleAsync(string appId, string appVersionId, Example model)    </utterance></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var response = await Post($“/apps/{appId}/versions/{appVersionId}/example”, model);    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject<utterance>(response);    </utterance></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>#region Train  </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Sends a training request for a version of a specified LUIS app  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>A object of training request details</returns>  </p>
+</li>
+<li><p>public async Task<trainingdetails> TrainAsync(string appId, string appVersionId)    </trainingdetails></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var response = await Post($“/apps/{appId}/versions/{appVersionId}/train”);    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject<trainingdetails>(response);    </trainingdetails></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Gets the training status of all models (intents and entities) for the specified LUIS app  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <returns>A list of trainings status</returns>  </p>
+</li>
+<li><p>public async Task&lt;IEnumerable<training>&gt; GetTrainingStatusListAsync(string appId, string appVersionId)    </training></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var response = await Get($“/apps/{appId}/versions/{appVersionId}/train”);    </p>
+</li>
+<li><p>var content = await response.Content.ReadAsStringAsync();    </p>
+</li>
+<li><p>if (response.IsSuccessStatusCode)    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject&lt;IEnumerable<training>&gt;(content);    </training></p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var exception = JsonConvert.DeserializeObject<serviceexception>(content);    </serviceexception></p>
+</li>
+<li><p>thrownew Exception($“{ exception.Error.Code} – { exception.Error.Message}”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>#region Publish  </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Publishes a specific version of the application  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <param name="”appId”">app id  </p>
+</li>
+<li><p>/// <param name="”appVersionId”">app version  </p>
+</li>
+<li><p>/// <param name="”isStaging”">  </p>
+</li>
+<li><p>/// <param name="”region”">If the app is created in “westeurope”, then the publish location is also “westeurope.” For all other app locations, the publish location is “westus”  </p>
+</li>
+<li><p>/// <returns>A object of publish details</returns>  </p>
+</li>
+<li><p>public async Task<publish> PublishAsync(string appId, string appVersionId, bool isStaging, string region)    </publish></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var model = new</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>versionId = appVersionId,    </p>
+</li>
+<li><p>isStaging = isStaging.ToString(),    </p>
+</li>
+<li><p>region = region    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>var response = await Post($“/apps/{appId}/publish”, model);    </p>
+</li>
+<li><p>return JsonConvert.DeserializeObject<publish>(response);    </publish></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://iuu.me/luis-programmatic-apis-v2-0-helper/" data-id="cjvp22zz8000zsomhdrxy32g1" class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AI/">AI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/LUIS/">LUIS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/REST-API/">REST API</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/csharp/">csharp</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/aud-azuresearch-indexer-document/" class="article-nav-link">
+        <strong class="article-nav-caption">Newer posts</strong>
+        <div class="article-nav-title">
+          
+            Add/Update/Delete AzureSearch Indexer Document
+          
+        </div>
+      </a>
+    
+    
+      <a href="/everyonehasaheartthatloveslife/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">每个人都有一颗热爱生活的心</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  
+
+</article>
+
+
+
+  <div id="lv-container" data-id="city" data-uid="MTAyMC80NDIzOS8yMDc3Mg==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+</div>
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+    <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2019 iUU</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="iUU"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archives</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>

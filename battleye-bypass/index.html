@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+    <meta name="keywords" content="iuu,jonah,哎呦呦,子非鱼安知鱼之乐">
+  
+  
+    <meta name="description" content="子非鱼，安知鱼之乐。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    Battleye bypass |
+    
+    iUU</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-battleye-bypass" class="article article-type-post" itemscope="" itemprop="blogPost" data-scroll-reveal="">
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Battleye bypass
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/battleye-bypass/" class="article-date">
+  <time datetime="2017-08-04T01:10:42.000Z" itemprop="datePublished">2017-08-04</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Code/">Code</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <p><img src="https://iuu.me/wp-content/uploads/2018/07/bypass-300x225.jpg" alt=""> BE，国外知名的ring0级别的反作弊保护系统，跟国内小马哥的TP差不多，被保护的程序。将无法进行读写内存等操作，又不给读又不给写那不变成了盲人摸象。而且BE的监察力度很大，ring0级别的驱动也同样会被检测。当BE检测到OpenProcess对受保护进程的调用就会重点关注你接下来的一言一行，如果继续去试图读取受保护进程的内存，直接就会被记录在案，延缓执行GLOBE BAN。 膜拜striek和MarkHC两位大佬提供的bypass的新思路：CPU-Z驱动程序允许用户直接读写物理内存，你可以首先尝试启动一个低访问的句柄，在你需要的时候直接通过内核对象操作提升句柄权限。LoadLibrary劫持受保护的进程来做你想做的事儿。 实测Bypass on PUBG 实例： CPUZ Dirver:</p>
+<ol>
+<li><p>using System;    </p>
+</li>
+<li><p>using System.Collections.Generic;    </p>
+</li>
+<li><p>using System.IO;    </p>
+</li>
+<li><p>using System.Linq;    </p>
+</li>
+<li><p>using System.Runtime.InteropServices;    </p>
+</li>
+<li><p>using System.Text;    </p>
+</li>
+<li><p>using System.Threading;    </p>
+</li>
+<li><p>using System.Threading.Tasks;    </p>
+</li>
+<li><p>namespace DriverExploits    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicunsafeclass CPUZ    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>privateconststring DriverDisplayName = “cpuz141”;    </p>
+</li>
+<li><p>privateconststring DriverFileName = “C:\\Windows\\System32\\drivers\\cpuz141.sys”;    </p>
+</li>
+<li><p>privateconststring DriverDeviceName = “\\Device\\cpuz141”;    </p>
+</li>
+<li><p>privateconstuint IOCTL_ReadControlRegister = 0x9C402428;    </p>
+</li>
+<li><p>privateconstuint IOCTL_ReadPhysicalAddress = 0x9C402420;    </p>
+</li>
+<li><p>privateconstuint IOCTL_WritePhysicalAddress = 0x9C402430;    </p>
+</li>
+<li><p>private IntPtr g_ServiceHandle;    </p>
+</li>
+<li><p>private IntPtr g_DeviceHandle;    </p>
+</li>
+<li><p>#region Memory Structs  </p>
+</li>
+<li><p>[StructLayout(LayoutKind.Sequential)]    </p>
+</li>
+<li><p>struct InputReadStruct    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicuint AddressHigh;    </p>
+</li>
+<li><p>publicuint AddressLow;    </p>
+</li>
+<li><p>publicuint Length;    </p>
+</li>
+<li><p>publicuint BufferHigh;    </p>
+</li>
+<li><p>publicuint BufferLow;    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>[StructLayout(LayoutKind.Sequential)]    </p>
+</li>
+<li><p>struct InputWriteStruct    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicuint AddressHigh;    </p>
+</li>
+<li><p>publicuint AddressLow;    </p>
+</li>
+<li><p>publicuint Value;    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>[StructLayout(LayoutKind.Sequential)]    </p>
+</li>
+<li><p>struct OutputStruct    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicuint Operation;    </p>
+</li>
+<li><p>publicuint BufferLow;    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>// DRIVER FUNCTIONS  </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Load the vulnerable driver  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>publicbool Load()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>IntPtr serviceHandle;    </p>
+</li>
+<li><p>if (ServiceHelper.OpenService(out serviceHandle, DriverDisplayName, 0x0020/*SERVICE_STOP*/ | 0x00010000/*DELETE*/))    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Console.WriteLine($“[!] Service already running”);    </p>
+</li>
+<li><p>if (!ServiceHelper.StopService(serviceHandle))    </p>
+</li>
+<li><p>Console.WriteLine($“[!] Couldn’t stop service”);    </p>
+</li>
+<li><p>if (!ServiceHelper.DeleteService(serviceHandle))    </p>
+</li>
+<li><p>Console.WriteLine($“[!] Couldn’t delete service”);    </p>
+</li>
+<li><p>ServiceHelper.CloseServiceHandle(serviceHandle);    </p>
+</li>
+<li><p>return Load();    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>File.WriteAllBytes(DriverFileName, CPUZShellcode.Shellcode);    </p>
+</li>
+<li><p>Console.WriteLine($“[+] Loading…”);    </p>
+</li>
+<li><p>if (!ServiceHelper.CreateService(    </p>
+</li>
+<li><p>ref g_ServiceHandle,    </p>
+</li>
+<li><p>DriverDisplayName, DriverDisplayName,    </p>
+</li>
+<li><p>DriverFileName,    </p>
+</li>
+<li><p>(uint)Nt.SERVICE_ACCESS.SERVICE_ALL_ACCESS, 1/*SERVICE_KERNEL_DRIVER*/,    </p>
+</li>
+<li><p>(uint)Nt.SERVICE_START.SERVICE_DEMAND_START, 1/*SERVICE_ERROR_NORMAL*/))    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Console.WriteLine($“[!] Failed to create service – {Marshal.GetLastWin32Error():X}”);    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>if (!ServiceHelper.StartService(g_ServiceHandle))    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Console.WriteLine($“[!] Failed to start service – {Marshal.GetLastWin32Error():X}”);    </p>
+</li>
+<li><p>ServiceHelper.DeleteService(g_ServiceHandle);    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>Console.WriteLine($“[+] Getting Device Handle”);    </p>
+</li>
+<li><p>Nt.OBJECT_ATTRIBUTES objectAttributes = new Nt.OBJECT_ATTRIBUTES();    </p>
+</li>
+<li><p>Nt.UNICODE_STRING deviceName = new Nt.UNICODE_STRING(DriverDeviceName);    </p>
+</li>
+<li><p>Nt.IO_STATUS_BLOCK ioStatus;    </p>
+</li>
+<li><p>objectAttributes.Length = Marshal.SizeOf(typeof(Nt.OBJECT_ATTRIBUTES));    </p>
+</li>
+<li><p>objectAttributes.ObjectName = new IntPtr(&amp;deviceName);    </p>
+</li>
+<li><p>uint status = 0;    </p>
+</li>
+<li><p>IntPtr deviceHandle;    </p>
+</li>
+<li><p>do</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>status = Nt.NtOpenFile(    </p>
+</li>
+<li><p>&amp;deviceHandle,    </p>
+</li>
+<li><p>(uint)(Nt.ACCESS_MASK.GENERIC_READ | Nt.ACCESS_MASK.GENERIC_WRITE | Nt.ACCESS_MASK.SYNCHRONIZE),    </p>
+</li>
+<li><p>&amp;objectAttributes, &amp;ioStatus, 0, 3/*OPEN_EXISTING*/);    </p>
+</li>
+<li><p>if (status != 0/*NT_SUCCESS*/)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Console.WriteLine($“[!] NtOpenFile failed! – {status:X}”);    </p>
+</li>
+<li><p>Thread.Sleep(250);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>} while (status != 0/*NT_SUCCESS*/);    </p>
+</li>
+<li><p>g_DeviceHandle = deviceHandle;    </p>
+</li>
+<li><p>Console.WriteLine($“[+] hService: {g_ServiceHandle:X}”);    </p>
+</li>
+<li><p>Console.WriteLine($“[+] hDevice: {g_DeviceHandle:X}”);    </p>
+</li>
+<li><p>returntrue;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Unload the vulnerable driver (and clean up its mess)  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <returns></returns>  </p>
+</li>
+<li><p>publicbool Unload()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>if (!ServiceHelper.StopService(g_ServiceHandle))    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Console.WriteLine($“[!] Couldn’t stop service”);    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>if (!ServiceHelper.DeleteService(g_ServiceHandle))    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Console.WriteLine($“[!] Couldn’t delete service”);    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>ServiceHelper.CloseServiceHandle(g_ServiceHandle);    </p>
+</li>
+<li><p>Nt.CloseHandle(g_DeviceHandle);    </p>
+</li>
+<li><p>Console.WriteLine($“[+] Unloaded service”);    </p>
+</li>
+<li><p>returntrue;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>// HELPERS  </p>
+</li>
+<li><p>privateulong LODWORD(ulong l) =&gt; (l &amp; 0xffffffff);    </p>
+</li>
+<li><p>privateulong HIDWORD(ulong l) =&gt; ((l &gt;&gt; 32) &amp; 0xffffffff);    </p>
+</li>
+<li><p>/* I HAVE NO FUCKING CLUE – BLINDLY TRUST MARK  </p>
+</li>
+<li><ul>
+<li>[8:13 PM] markhc: <a href="https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-system-programming-manual-325384.pdf" target="_blank" rel="noopener">https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-system-programming-manual-325384.pdf</a>  </li>
+</ul>
+</li>
+<li><ul>
+<li>[8:13 PM] markhc: chapter 4  </li>
+</ul>
+</li>
+<li><ul>
+<li>[8:14 PM] markhc: Figure 4-8. Linear-Address Translation to a 4-KByte Page using IA-32e Paging  </li>
+</ul>
+</li>
+<li><p>*/</p>
+</li>
+<li><p>publiculong TranslateLinearAddress(ulong directoryTableBase, ulong virtualAddress)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ushort PML4 = (ushort)((virtualAddress &gt;&gt; 39) &amp; 0x1FF);         //&lt;! PML4 Entry Index  </p>
+</li>
+<li><p>ushort DirectoryPtr = (ushort)((virtualAddress &gt;&gt; 30) &amp; 0x1FF); //&lt;! Page-Directory-Pointer Table Index  </p>
+</li>
+<li><p>ushort Directory = (ushort)((virtualAddress &gt;&gt; 21) &amp; 0x1FF);    //&lt;! Page Directory Table Index  </p>
+</li>
+<li><p>ushort Table = (ushort)((virtualAddress &gt;&gt; 12) &amp; 0x1FF);        //&lt;! Page Table Index  </p>
+</li>
+<li><p>// Read the PML4 Entry. DirectoryTableBase has the base address of the table.  </p>
+</li>
+<li><p>// It can be read from the CR3 register or from the kernel process object.  </p>
+</li>
+<li><p>ulong PML4E = ReadPhysicalAddress<ulong>(directoryTableBase + (ulong)PML4 * sizeof(ulong));    </ulong></p>
+</li>
+<li><p>if (PML4E == 0)    </p>
+</li>
+<li><p>return 0;    </p>
+</li>
+<li><p>// The PML4E that we read is the base address of the next table on the chain,  </p>
+</li>
+<li><p>// the Page-Directory-Pointer Table.  </p>
+</li>
+<li><p>ulong PDPTE = ReadPhysicalAddress<ulong>((PML4E &amp; 0xFFFF1FFFFFF000) + (ulong)DirectoryPtr * sizeof(ulong));    </ulong></p>
+</li>
+<li><p>if (PDPTE == 0)    </p>
+</li>
+<li><p>return 0;    </p>
+</li>
+<li><p>//Check the PS bit  </p>
+</li>
+<li><p>if ((PDPTE &amp; (1 &lt;&lt; 7)) != 0)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>// If the PDPTE’s PS flag is 1, the PDPTE maps a 1-GByte page. The  </p>
+</li>
+<li><p>// final physical address is computed as follows:  </p>
+</li>
+<li><p>// — Bits 51:30 are from the PDPTE.  </p>
+</li>
+<li><p>// — Bits 29:0 are from the original va address.  </p>
+</li>
+<li><p>return (PDPTE &amp; 0xFFFFFC0000000) + (virtualAddress &amp; 0x3FFFFFFF);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>// PS bit was 0. That means that the PDPTE references the next table  </p>
+</li>
+<li><p>// on the chain, the Page Directory Table. Read it.  </p>
+</li>
+<li><p>ulong PDE = ReadPhysicalAddress<ulong>((PDPTE &amp; 0xFFFFFFFFFF000) + (ulong)Directory * sizeof(ulong));    </ulong></p>
+</li>
+<li><p>if (PDE == 0)    </p>
+</li>
+<li><p>return 0;    </p>
+</li>
+<li><p>if ((PDE &amp; (1 &lt;&lt; 7)) != 0)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>// If the PDE’s PS flag is 1, the PDE maps a 2-MByte page. The  </p>
+</li>
+<li><p>// final physical address is computed as follows:  </p>
+</li>
+<li><p>// — Bits 51:21 are from the PDE.  </p>
+</li>
+<li><p>// — Bits 20:0 are from the original va address.  </p>
+</li>
+<li><p>return (PDE &amp; 0xFFFFFFFE00000) + (virtualAddress &amp; 0x1FFFFF);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>// PS bit was 0. That means that the PDE references a Page Table.  </p>
+</li>
+<li><p>ulong PTE = ReadPhysicalAddress<ulong>((PDE &amp; 0xFFFFFFFFFF000) + (ulong)Table * sizeof(ulong));    </ulong></p>
+</li>
+<li><p>if (PTE == 0)    </p>
+</li>
+<li><p>return 0;    </p>
+</li>
+<li><p>// The PTE maps a 4-KByte page. The  </p>
+</li>
+<li><p>// final physical address is computed as follows:  </p>
+</li>
+<li><p>// — Bits 51:12 are from the PTE.  </p>
+</li>
+<li><p>// — Bits 11:0 are from the original va address.  </p>
+</li>
+<li><p>return (PTE &amp; 0xFFFFFFFFFF000) + (virtualAddress &amp; 0xFFF);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Read a kernel control register  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <returns>Value of control register</returns>  </p>
+</li>
+<li><p>publiculong ReadControlRegister(uint controlRegister)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ulong value = 0;    </p>
+</li>
+<li><p>ulong io = 0;    </p>
+</li>
+<li><p>if (!Nt.DeviceIoControl(g_DeviceHandle, IOCTL_ReadControlRegister, &amp;controlRegister, sizeof(uint), &amp;value, sizeof(ulong), &amp;io, 0))    </p>
+</li>
+<li><p>thrownew Exception(“DeviceIonControl failed! – 0x9C402428”);    </p>
+</li>
+<li><p>return value;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Read buffer, of specified size, at physical address  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <returns>Success</returns>  </p>
+</li>
+<li><p>publicbool ReadPhysicalAddress(ulong lpAddress, ulong lpBuffer, ulong lLength)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>InputReadStruct input = new InputReadStruct();    </p>
+</li>
+<li><p>OutputStruct output = new OutputStruct();    </p>
+</li>
+<li><p>if (lpAddress == 0 || lpBuffer == 0)    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>input.AddressHigh = (uint)HIDWORD(lpAddress);    </p>
+</li>
+<li><p>input.AddressLow = (uint)LODWORD(lpAddress);    </p>
+</li>
+<li><p>input.Length = (uint)lLength;    </p>
+</li>
+<li><p>input.BufferHigh = (uint)HIDWORD(lpBuffer);    </p>
+</li>
+<li><p>input.BufferLow = (uint)LODWORD(lpBuffer);    </p>
+</li>
+<li><p>ulong io = 0;    </p>
+</li>
+<li><p>return Nt.DeviceIoControl(g_DeviceHandle, IOCTL_ReadPhysicalAddress, &amp;input, (uint)Marshal.SizeOf(typeof(InputReadStruct)), &amp;output, (uint)Marshal.SizeOf(typeof(OutputStruct)), &amp;io, 0);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Write buffer, of specified size, at physical address  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <returns>Success</returns>  </p>
+</li>
+<li><p>publicbool WritePhysicalAddress(ulong address, ulong buf, ulong len)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>if (len % 4 != 0 || len == 0)    </p>
+</li>
+<li><p>thrownew Exception(“The CPU-Z driver can only write lengths that are aligned to 4 bytes (4, 8, 12, 16, etc)”);    </p>
+</li>
+<li><p>InputWriteStruct in_mem = new InputWriteStruct();    </p>
+</li>
+<li><p>OutputStruct out_mem = new OutputStruct();    </p>
+</li>
+<li><p>if (address == 0 || buf == 0)    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>ulong io = 0;    </p>
+</li>
+<li><p>if (len == 4)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>in_mem.AddressHigh = (uint)HIDWORD(address);    </p>
+</li>
+<li><p>in_mem.AddressLow = (uint)LODWORD(address);    </p>
+</li>
+<li><p>in_mem.Value = <em>(uint</em>)buf;    </p>
+</li>
+<li><p>return Nt.DeviceIoControl(g_DeviceHandle, IOCTL_WritePhysicalAddress, &amp;in_mem, (uint)Marshal.SizeOf(typeof(InputWriteStruct)), &amp;out_mem, (uint)Marshal.SizeOf(typeof(OutputStruct)), &amp;io, 0);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>for (uint i = 0; i &lt; len / 4; i++)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>in_mem.AddressHigh = (uint)HIDWORD(address + 4 * i);    </p>
+</li>
+<li><p>in_mem.AddressLow = (uint)LODWORD(address + 4 * i);    </p>
+</li>
+<li><p>in_mem.Value = ((uint*)buf)[i];    </p>
+</li>
+<li><p>if (!Nt.DeviceIoControl(g_DeviceHandle, IOCTL_WritePhysicalAddress, &amp;in_mem, (uint)Marshal.SizeOf(typeof(InputWriteStruct)), &amp;out_mem, (uint)Marshal.SizeOf(typeof(OutputStruct)), &amp;io, 0))    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>returntrue;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Read buffer, of specified length, at system address  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <returns>Success</returns>  </p>
+</li>
+<li><p>publicbool ReadSystemAddress(ulong address, ulong buf, ulong len)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ulong dirbase = ReadControlRegister(3); // FOR ADDRESS TRANSLATION  </p>
+</li>
+<li><p>ulong phys = TranslateLinearAddress(dirbase, address);    </p>
+</li>
+<li><p>if (phys == 0)    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>return ReadPhysicalAddress(phys, buf, len);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Write buffer, of specified length, at system address  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// <returns>Success</returns>  </p>
+</li>
+<li><p>publicbool WriteSystemAddress(ulong address, ulong buf, ulong len)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ulong dirbase = ReadControlRegister(3); // FOR ADDRESS TRANSLATION  </p>
+</li>
+<li><p>ulong phys = TranslateLinearAddress(dirbase, address);    </p>
+</li>
+<li><p>if (phys == 0)    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>return WritePhysicalAddress(phys, buf, len);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>// GENERIC WRAPPERS  </p>
+</li>
+<li><p>public T ReadPhysicalAddress<t>(ulong address) where T : struct</t></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var buf = (ulong*)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));    </p>
+</li>
+<li><p>if (!ReadPhysicalAddress(address, (ulong)buf, (ulong)Marshal.SizeOf(typeof(T))))    </p>
+</li>
+<li><p>thrownew Exception(“Read failed”);    </p>
+</li>
+<li><p>T result = (T)Marshal.PtrToStructure((IntPtr)buf, typeof(T));    </p>
+</li>
+<li><p>Marshal.FreeHGlobal((IntPtr)buf);    </p>
+</li>
+<li><p>return result;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>public T ReadSystemAddress<t>(ulong address) where T : struct</t></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var buf = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));    </p>
+</li>
+<li><p>if (!ReadSystemAddress(address, (ulong)buf, (ulong)Marshal.SizeOf(typeof(T))))    </p>
+</li>
+<li><p>thrownew Exception(“Read failed”);    </p>
+</li>
+<li><p>T result = (T)Marshal.PtrToStructure(buf, typeof(T));    </p>
+</li>
+<li><p>Marshal.FreeHGlobal(buf);    </p>
+</li>
+<li><p>return result;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicbool WritePhysicalAddress<t>(ulong address, T value) where T : struct</t></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var buf = (ulong)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));    </p>
+</li>
+<li><p>Marshal.StructureToPtr(value, (IntPtr)buf, false);    </p>
+</li>
+<li><p>bool success = WritePhysicalAddress(address, buf, (ulong)Marshal.SizeOf(typeof(T)));    </p>
+</li>
+<li><p>Marshal.FreeHGlobal((IntPtr)buf);    </p>
+</li>
+<li><p>return success;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicbool WriteSystemAddress<t>(ulong address, T value) where T : struct</t></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var buf = (ulong)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));    </p>
+</li>
+<li><p>Marshal.StructureToPtr(value, (IntPtr)buf, false);    </p>
+</li>
+<li><p>bool success = WriteSystemAddress(address, buf, (ulong)Marshal.SizeOf(typeof(T)));    </p>
+</li>
+<li><p>Marshal.FreeHGlobal((IntPtr)buf);    </p>
+</li>
+<li><p>return success;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Native functions ?  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>privatestaticclass Nt    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>#region Function  </p>
+</li>
+<li><p>[DllImport(“kernel32.dll”, ExactSpelling = true, SetLastError = true, CharSet = CharSet.Auto)]    </p>
+</li>
+<li><p>publicstaticexternbool DeviceIoControl(    </p>
+</li>
+<li><p>IntPtr hDevice,    </p>
+</li>
+<li><p>uint dwIoControlCode,    </p>
+</li>
+<li><p>void* lpInBuffer,    </p>
+</li>
+<li><p>uint nInBufferSize,    </p>
+</li>
+<li><p>void* lpOutBuffer,    </p>
+</li>
+<li><p>uint nOutBufferSize,    </p>
+</li>
+<li><p>ulong* lpBytesReturned,    </p>
+</li>
+<li><p>uint lpOverlapped);    </p>
+</li>
+<li><p>[DllImport(“kernel32.dll”, SetLastError = true)]    </p>
+</li>
+<li><p>[return: MarshalAs(UnmanagedType.Bool)]    </p>
+</li>
+<li><p>publicstaticexternbool CloseHandle(IntPtr hObject);    </p>
+</li>
+<li><p>[DllImport(“ntdll.dll”, CharSet = CharSet.Auto)]    </p>
+</li>
+<li><p>publicstaticexternuint NtOpenFile(IntPtr* FileHandle, uint DesiredAccess, OBJECT_ATTRIBUTES* ObjectAttributes, IO_STATUS_BLOCK* IoStatusBlock, uint ShareAccess, uint OpenOptions);    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>#region Structs  </p>
+</li>
+<li><p>[StructLayout(LayoutKind.Sequential, Pack = 0)]    </p>
+</li>
+<li><p>publicstruct OBJECT_ATTRIBUTES    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>public Int32 Length;    </p>
+</li>
+<li><p>public IntPtr RootDirectory;    </p>
+</li>
+<li><p>public IntPtr ObjectName;    </p>
+</li>
+<li><p>publicuint Attributes;    </p>
+</li>
+<li><p>public IntPtr SecurityDescriptor;    </p>
+</li>
+<li><p>public IntPtr SecurityQualityOfService;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>[StructLayout(LayoutKind.Sequential, Pack = 0)]    </p>
+</li>
+<li><p>publicstruct IO_STATUS_BLOCK    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicuint status;    </p>
+</li>
+<li><p>public IntPtr information;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>[StructLayout(LayoutKind.Sequential)]    </p>
+</li>
+<li><p>publicstruct UNICODE_STRING : IDisposable    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicushort Length;    </p>
+</li>
+<li><p>publicushort MaximumLength;    </p>
+</li>
+<li><p>private IntPtr buffer;    </p>
+</li>
+<li><p>public UNICODE_STRING(string s)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Length = (ushort)(s.Length * 2);    </p>
+</li>
+<li><p>MaximumLength = (ushort)(Length + 2);    </p>
+</li>
+<li><p>buffer = Marshal.StringToHGlobalUni(s);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicvoid Dispose()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Marshal.FreeHGlobal(buffer);    </p>
+</li>
+<li><p>buffer = IntPtr.Zero;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicoverridestring ToString()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>return Marshal.PtrToStringUni(buffer);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>#region Flags  </p>
+</li>
+<li><p>[Flags]    </p>
+</li>
+<li><p>publicenum SERVICE_ACCESS : uint</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the QueryServiceConfig and   </p>
+</li>
+<li><p>/// QueryServiceConfig2 functions to query the service configuration.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_QUERY_CONFIG = 0x00001,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the ChangeServiceConfig or ChangeServiceConfig2 function   </p>
+</li>
+<li><p>/// to change the service configuration. Because this grants the caller   </p>
+</li>
+<li><p>/// the right to change the executable file that the system runs,   </p>
+</li>
+<li><p>/// it should be granted only to administrators.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_CHANGE_CONFIG = 0x00002,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the QueryServiceStatusEx function to ask the service   </p>
+</li>
+<li><p>/// control manager about the status of the service.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_QUERY_STATUS = 0x00004,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the EnumDependentServices function to enumerate all   </p>
+</li>
+<li><p>/// the services dependent on the service.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_ENUMERATE_DEPENDENTS = 0x00008,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the StartService function to start the service.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_START = 0x00010,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>///     Required to call the ControlService function to stop the service.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_STOP = 0x00020,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the ControlService function to pause or continue   </p>
+</li>
+<li><p>/// the service.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_PAUSE_CONTINUE = 0x00040,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the EnumDependentServices function to enumerate all  </p>
+</li>
+<li><p>/// the services dependent on the service.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_INTERROGATE = 0x00080,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the ControlService function to specify a user-defined  </p>
+</li>
+<li><p>/// control code.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_USER_DEFINED_CONTROL = 0x00100,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Includes STANDARD_RIGHTS_REQUIRED in addition to all access rights in this table.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_ALL_ACCESS = (ACCESS_MASK.STANDARD_RIGHTS_REQUIRED |    </p>
+</li>
+<li><p>SERVICE_QUERY_CONFIG |    </p>
+</li>
+<li><p>SERVICE_CHANGE_CONFIG |    </p>
+</li>
+<li><p>SERVICE_QUERY_STATUS |    </p>
+</li>
+<li><p>SERVICE_ENUMERATE_DEPENDENTS |    </p>
+</li>
+<li><p>SERVICE_START |    </p>
+</li>
+<li><p>SERVICE_STOP |    </p>
+</li>
+<li><p>SERVICE_PAUSE_CONTINUE |    </p>
+</li>
+<li><p>SERVICE_INTERROGATE |    </p>
+</li>
+<li><p>SERVICE_USER_DEFINED_CONTROL),    </p>
+</li>
+<li><p>GENERIC_READ = ACCESS_MASK.STANDARD_RIGHTS_READ |    </p>
+</li>
+<li><p>SERVICE_QUERY_CONFIG |    </p>
+</li>
+<li><p>SERVICE_QUERY_STATUS |    </p>
+</li>
+<li><p>SERVICE_INTERROGATE |    </p>
+</li>
+<li><p>SERVICE_ENUMERATE_DEPENDENTS,    </p>
+</li>
+<li><p>GENERIC_WRITE = ACCESS_MASK.STANDARD_RIGHTS_WRITE |    </p>
+</li>
+<li><p>SERVICE_CHANGE_CONFIG,    </p>
+</li>
+<li><p>GENERIC_EXECUTE = ACCESS_MASK.STANDARD_RIGHTS_EXECUTE |    </p>
+</li>
+<li><p>SERVICE_START |    </p>
+</li>
+<li><p>SERVICE_STOP |    </p>
+</li>
+<li><p>SERVICE_PAUSE_CONTINUE |    </p>
+</li>
+<li><p>SERVICE_USER_DEFINED_CONTROL,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the QueryServiceObjectSecurity or   </p>
+</li>
+<li><p>/// SetServiceObjectSecurity function to access the SACL. The proper  </p>
+</li>
+<li><p>/// way to obtain this access is to enable the SE_SECURITY_NAME   </p>
+</li>
+<li><p>/// privilege in the caller’s current access token, open the handle   </p>
+</li>
+<li><p>/// for ACCESS_SYSTEM_SECURITY access, and then disable the privilege.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>ACCESS_SYSTEM_SECURITY = ACCESS_MASK.ACCESS_SYSTEM_SECURITY,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the DeleteService function to delete the service.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>DELETE = ACCESS_MASK.DELETE,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the QueryServiceObjectSecurity function to query  </p>
+</li>
+<li><p>/// the security descriptor of the service object.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>READ_CONTROL = ACCESS_MASK.READ_CONTROL,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the SetServiceObjectSecurity function to modify  </p>
+</li>
+<li><p>/// the Dacl member of the service object’s security descriptor.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>WRITE_DAC = ACCESS_MASK.WRITE_DAC,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Required to call the SetServiceObjectSecurity function to modify   </p>
+</li>
+<li><p>/// the Owner and Group members of the service object’s security   </p>
+</li>
+<li><p>/// descriptor.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>WRITE_OWNER = ACCESS_MASK.WRITE_OWNER,    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>[Flags]    </p>
+</li>
+<li><p>publicenum ACCESS_MASK : uint</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>DELETE = 0x00010000,    </p>
+</li>
+<li><p>READ_CONTROL = 0x00020000,    </p>
+</li>
+<li><p>WRITE_DAC = 0x00040000,    </p>
+</li>
+<li><p>WRITE_OWNER = 0x00080000,    </p>
+</li>
+<li><p>SYNCHRONIZE = 0x00100000,    </p>
+</li>
+<li><p>STANDARD_RIGHTS_REQUIRED = 0x000F0000,    </p>
+</li>
+<li><p>STANDARD_RIGHTS_READ = 0x00020000,    </p>
+</li>
+<li><p>STANDARD_RIGHTS_WRITE = 0x00020000,    </p>
+</li>
+<li><p>STANDARD_RIGHTS_EXECUTE = 0x00020000,    </p>
+</li>
+<li><p>STANDARD_RIGHTS_ALL = 0x001F0000,    </p>
+</li>
+<li><p>SPECIFIC_RIGHTS_ALL = 0x0000FFFF,    </p>
+</li>
+<li><p>ACCESS_SYSTEM_SECURITY = 0x01000000,    </p>
+</li>
+<li><p>MAXIMUM_ALLOWED = 0x02000000,    </p>
+</li>
+<li><p>GENERIC_READ = 0x80000000,    </p>
+</li>
+<li><p>GENERIC_WRITE = 0x40000000,    </p>
+</li>
+<li><p>GENERIC_EXECUTE = 0x20000000,    </p>
+</li>
+<li><p>GENERIC_ALL = 0x10000000,    </p>
+</li>
+<li><p>DESKTOP_READOBJECTS = 0x00000001,    </p>
+</li>
+<li><p>DESKTOP_CREATEWINDOW = 0x00000002,    </p>
+</li>
+<li><p>DESKTOP_CREATEMENU = 0x00000004,    </p>
+</li>
+<li><p>DESKTOP_HOOKCONTROL = 0x00000008,    </p>
+</li>
+<li><p>DESKTOP_JOURNALRECORD = 0x00000010,    </p>
+</li>
+<li><p>DESKTOP_JOURNALPLAYBACK = 0x00000020,    </p>
+</li>
+<li><p>DESKTOP_ENUMERATE = 0x00000040,    </p>
+</li>
+<li><p>DESKTOP_WRITEOBJECTS = 0x00000080,    </p>
+</li>
+<li><p>DESKTOP_SWITCHDESKTOP = 0x00000100,    </p>
+</li>
+<li><p>WINSTA_ENUMDESKTOPS = 0x00000001,    </p>
+</li>
+<li><p>WINSTA_READATTRIBUTES = 0x00000002,    </p>
+</li>
+<li><p>WINSTA_ACCESSCLIPBOARD = 0x00000004,    </p>
+</li>
+<li><p>WINSTA_CREATEDESKTOP = 0x00000008,    </p>
+</li>
+<li><p>WINSTA_WRITEATTRIBUTES = 0x00000010,    </p>
+</li>
+<li><p>WINSTA_ACCESSGLOBALATOMS = 0x00000020,    </p>
+</li>
+<li><p>WINSTA_EXITWINDOWS = 0x00000040,    </p>
+</li>
+<li><p>WINSTA_ENUMERATE = 0x00000100,    </p>
+</li>
+<li><p>WINSTA_READSCREEN = 0x00000200,    </p>
+</li>
+<li><p>WINSTA_ALL_ACCESS = 0x0000037F    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Service start options  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>publicenum SERVICE_START : uint</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// A device driver started by the system loader. This value is valid  </p>
+</li>
+<li><p>/// only for driver services.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_BOOT_START = 0x00000000,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// A device driver started by the IoInitSystem function. This value   </p>
+</li>
+<li><p>/// is valid only for driver services.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_SYSTEM_START = 0x00000001,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// A service started automatically by the service control manager   </p>
+</li>
+<li><p>/// during system startup. For more information, see Automatically   </p>
+</li>
+<li><p>/// Starting Services.  </p>
+</li>
+<li><p>///            </p>
+</li>
+<li><p>SERVICE_AUTO_START = 0x00000002,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// A service started by the service control manager when a process   </p>
+</li>
+<li><p>/// calls the StartService function. For more information, see   </p>
+</li>
+<li><p>/// Starting Services on Demand.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_DEMAND_START = 0x00000003,    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// A service that cannot be started. Attempts to start the service  </p>
+</li>
+<li><p>/// result in the error code ERROR_SERVICE_DISABLED.  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>SERVICE_DISABLED = 0x00000004,    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Wrapper for the native service functions  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>publicstaticclass ServiceHelper    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstaticbool CreateService(    </p>
+</li>
+<li><p>ref IntPtr hService,    </p>
+</li>
+<li><p>string ServiceName,    </p>
+</li>
+<li><p>string DisplayName,    </p>
+</li>
+<li><p>string BinPath,    </p>
+</li>
+<li><p>uint DesiredAccess,    </p>
+</li>
+<li><p>uint ServiceType,    </p>
+</li>
+<li><p>uint StartType,    </p>
+</li>
+<li><p>uint ErrorControl)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>IntPtr hSCManager = Nt.OpenSCManager(0, 0, 0x0002/*SC_MANAGER_CREATE_SERVICE*/);    </p>
+</li>
+<li><p>if (hSCManager == IntPtr.Zero)    </p>
+</li>
+<li><p>returnfalse;    </p>
+</li>
+<li><p>hService = Nt.CreateServiceW(    </p>
+</li>
+<li><p>hSCManager,    </p>
+</li>
+<li><p>ServiceName, DisplayName,    </p>
+</li>
+<li><p>DesiredAccess,    </p>
+</li>
+<li><p>ServiceType, StartType,    </p>
+</li>
+<li><p>ErrorControl, BinPath,    </p>
+</li>
+<li><p>0, 0, 0, 0, 0, 0);    </p>
+</li>
+<li><p>Nt.CloseServiceHandle(hSCManager);    </p>
+</li>
+<li><p>return hService != IntPtr.Zero;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicstaticbool OpenService(out IntPtr hService, string szServiceName, uint DesiredAccess)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>IntPtr hSCManager = Nt.OpenSCManager(0, 0, DesiredAccess);    </p>
+</li>
+<li><p>hService = Nt.OpenService(hSCManager, szServiceName, DesiredAccess);    </p>
+</li>
+<li><p>Nt.CloseServiceHandle(hSCManager);    </p>
+</li>
+<li><p>return hService != IntPtr.Zero;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicstaticbool StopService(IntPtr hService)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Nt.SERVICE_STATUS ServiceStatus = new Nt.SERVICE_STATUS();    </p>
+</li>
+<li><p>return Nt.ControlService(hService, Nt.SERVICE_CONTROL.STOP, ref ServiceStatus);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicstaticbool StartService(IntPtr hService) =&gt; Nt.StartService(hService, 0, null);    </p>
+</li>
+<li><p>publicstaticbool DeleteService(IntPtr hService) =&gt; Nt.DeleteService(hService);    </p>
+</li>
+<li><p>publicstaticvoid CloseServiceHandle(IntPtr hService) =&gt; Nt.CloseServiceHandle(hService);    </p>
+</li>
+<li><p>/// <summary>  </summary></p>
+</li>
+<li><p>/// Native functions ?  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>privatestaticclass Nt    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>[DllImport(“advapi32.dll”, EntryPoint = “OpenSCManagerW”, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]    </p>
+</li>
+<li><p>publicstaticextern IntPtr OpenSCManager(uint machineName, uint databaseName, uint dwAccess);    </p>
+</li>
+<li><p>[DllImport(“advapi32.dll”, SetLastError = true, CharSet = CharSet.Auto)]    </p>
+</li>
+<li><p>publicstaticextern IntPtr OpenService(IntPtr hSCManager, string lpServiceName, uint dwDesiredAccess);    </p>
+</li>
+<li><p>[DllImport(“advapi32.dll”, SetLastError = true)]    </p>
+</li>
+<li><p>[return: MarshalAs(UnmanagedType.Bool)]    </p>
+</li>
+<li><p>publicstaticexternbool CloseServiceHandle(IntPtr hSCObject);    </p>
+</li>
+<li><p>[DllImport(“advapi32.dll”, SetLastError = true)]    </p>
+</li>
+<li><p>[return: MarshalAs(UnmanagedType.Bool)]    </p>
+</li>
+<li><p>publicstaticexternbool ControlService(IntPtr hService, SERVICE_CONTROL dwControl, ref SERVICE_STATUS lpServiceStatus);    </p>
+</li>
+<li><p>[DllImport(“advapi32”, SetLastError = true)]    </p>
+</li>
+<li><p>[return: MarshalAs(UnmanagedType.Bool)]    </p>
+</li>
+<li><p>publicstaticexternbool StartService(    </p>
+</li>
+<li><p>IntPtr hService,    </p>
+</li>
+<li><p>int dwNumServiceArgs,    </p>
+</li>
+<li><p>string[] lpServiceArgVectors    </p>
+</li>
+<li><p>);    </p>
+</li>
+<li><p>[DllImport(“advapi32.dll”, SetLastError = true)]    </p>
+</li>
+<li><p>[return: MarshalAs(UnmanagedType.Bool)]    </p>
+</li>
+<li><p>publicstaticexternbool DeleteService(IntPtr hService);    </p>
+</li>
+<li><p>[DllImport(“advapi32.dll”, SetLastError = true, CharSet = CharSet.Auto)]    </p>
+</li>
+<li><p>publicstaticextern IntPtr CreateServiceW(    </p>
+</li>
+<li><p>IntPtr hSCManager,    </p>
+</li>
+<li><p>string lpServiceName,    </p>
+</li>
+<li><p>string lpDisplayName,    </p>
+</li>
+<li><p>uint dwDesiredAccess,    </p>
+</li>
+<li><p>uint dwServiceType,    </p>
+</li>
+<li><p>uint dwStartType,    </p>
+</li>
+<li><p>uint dwErrorControl,    </p>
+</li>
+<li><p>string lpBinaryPathName,    </p>
+</li>
+<li><p>uint lpLoadOrderGroup,    </p>
+</li>
+<li><p>uint lpdwTagId,    </p>
+</li>
+<li><p>uint lpdwTagId1,    </p>
+</li>
+<li><p>uint lpDependencies,    </p>
+</li>
+<li><p>uint lpServiceStartName,    </p>
+</li>
+<li><p>uint lpPassword);    </p>
+</li>
+<li><p>[StructLayout(LayoutKind.Sequential, Pack = 0)]    </p>
+</li>
+<li><p>publicstruct SERVICE_STATUS    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>public SERVICE_TYPE dwServiceType;    </p>
+</li>
+<li><p>public SERVICE_STATE dwCurrentState;    </p>
+</li>
+<li><p>publicuint dwControlsAccepted;    </p>
+</li>
+<li><p>publicuint dwWin32ExitCode;    </p>
+</li>
+<li><p>publicuint dwServiceSpecificExitCode;    </p>
+</li>
+<li><p>publicuint dwCheckPoint;    </p>
+</li>
+<li><p>publicuint dwWaitHint;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>[Flags]    </p>
+</li>
+<li><p>internalenum SERVICE_TYPE : int</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>SERVICE_KERNEL_DRIVER = 0x00000001,    </p>
+</li>
+<li><p>SERVICE_FILE_SYSTEM_DRIVER = 0x00000002,    </p>
+</li>
+<li><p>SERVICE_WIN32_OWN_PROCESS = 0x00000010,    </p>
+</li>
+<li><p>SERVICE_WIN32_SHARE_PROCESS = 0x00000020,    </p>
+</li>
+<li><p>SERVICE_INTERACTIVE_PROCESS = 0x00000100    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>[Flags]    </p>
+</li>
+<li><p>publicenum SERVICE_CONTROL : uint</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>STOP = 0x00000001,    </p>
+</li>
+<li><p>PAUSE = 0x00000002,    </p>
+</li>
+<li><p>CONTINUE = 0x00000003,    </p>
+</li>
+<li><p>INTERROGATE = 0x00000004,    </p>
+</li>
+<li><p>SHUTDOWN = 0x00000005,    </p>
+</li>
+<li><p>PARAMCHANGE = 0x00000006,    </p>
+</li>
+<li><p>NETBINDADD = 0x00000007,    </p>
+</li>
+<li><p>NETBINDREMOVE = 0x00000008,    </p>
+</li>
+<li><p>NETBINDENABLE = 0x00000009,    </p>
+</li>
+<li><p>NETBINDDISABLE = 0x0000000A,    </p>
+</li>
+<li><p>DEVICEEVENT = 0x0000000B,    </p>
+</li>
+<li><p>HARDWAREPROFILECHANGE = 0x0000000C,    </p>
+</li>
+<li><p>POWEREVENT = 0x0000000D,    </p>
+</li>
+<li><p>SESSIONCHANGE = 0x0000000E    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicenum SERVICE_STATE : uint</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>SERVICE_STOPPED = 0x00000001,    </p>
+</li>
+<li><p>SERVICE_START_PENDING = 0x00000002,    </p>
+</li>
+<li><p>SERVICE_STOP_PENDING = 0x00000003,    </p>
+</li>
+<li><p>SERVICE_RUNNING = 0x00000004,    </p>
+</li>
+<li><p>SERVICE_CONTINUE_PENDING = 0x00000005,    </p>
+</li>
+<li><p>SERVICE_PAUSE_PENDING = 0x00000006,    </p>
+</li>
+<li><p>SERVICE_PAUSED = 0x00000007    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>[Flags]    </p>
+</li>
+<li><p>publicenum SERVICE_ACCEPT : uint</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>STOP = 0x00000001,    </p>
+</li>
+<li><p>PAUSE_CONTINUE = 0x00000002,    </p>
+</li>
+<li><p>SHUTDOWN = 0x00000004,    </p>
+</li>
+<li><p>PARAMCHANGE = 0x00000008,    </p>
+</li>
+<li><p>NETBINDCHANGE = 0x00000010,    </p>
+</li>
+<li><p>HARDWAREPROFILECHANGE = 0x00000020,    </p>
+</li>
+<li><p>POWEREVENT = 0x00000040,    </p>
+</li>
+<li><p>SESSIONCHANGE = 0x00000080,    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+</ol>
+<p>ElevateHandle:</p>
+<ol>
+<li><p>using Loadlibrayy.Logger;    </p>
+</li>
+<li><p>using Loadlibrayy.Natives;    </p>
+</li>
+<li><p>using System;    </p>
+</li>
+<li><p>using System.Collections;    </p>
+</li>
+<li><p>using System.Collections.Generic;    </p>
+</li>
+<li><p>using System.Diagnostics;    </p>
+</li>
+<li><p>using System.Linq;    </p>
+</li>
+<li><p>using System.Runtime.InteropServices;    </p>
+</li>
+<li><p>using System.Text;    </p>
+</li>
+<li><p>using System.Threading.Tasks;    </p>
+</li>
+<li><p>namespace DriverExploits    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicunsafestaticclass ElevateHandle    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publicstatic CPUZ Driver = new CPUZ();    </p>
+</li>
+<li><p>#region Private Properties  </p>
+</li>
+<li><p>privatestatic NT.ProcessContext g_Context { get; set; }    </p>
+</li>
+<li><p>privatestaticulong g_VersionLong { get; set; }    </p>
+</li>
+<li><p>privatestaticuint g_OffsetDirectoryTable { get; set; }    </p>
+</li>
+<li><p>privatestaticuint g_OffsetProcessId { get; set; }    </p>
+</li>
+<li><p>privatestaticuint g_OffsetProcessLinks { get; set; }    </p>
+</li>
+<li><p>privatestaticuint g_OffsetObjectTable { get; set; }    </p>
+</li>
+<li><p>privatestaticbool g_IsWindows7Machine { get; set; }    </p>
+</li>
+<li><p>#endregion  </p>
+</li>
+<li><p>publicstaticvoid Attach() =&gt; g_Context = FindProcessInfo((uint)Process.GetCurrentProcess().Id);    </p>
+</li>
+<li><p>publicstaticbool Elevate(ulong handle, dynamic desiredAccess)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var handleTableAddress = ReadSystemMemory<ulong>(g_Context.KernelEntry + g_OffsetObjectTable);    </ulong></p>
+</li>
+<li><p>var handleTable = ReadSystemMemory&lt;_HANDLE_TABLE&gt;(handleTableAddress);    </p>
+</li>
+<li><p>NT._HANDLE_TABLE_ENTRY* entryAddress = g_IsWindows7Machine ?     </p>
+</li>
+<li><p>ExpLookupHandleTableEntryWin7(&amp;handleTable, handle) :     </p>
+</li>
+<li><p>ExpLookupHandleTableEntry(&amp;handleTable, handle);    </p>
+</li>
+<li><p>if ((ulong)entryAddress == 0)    </p>
+</li>
+<li><p>thrownew Exception(“ExpLookupHandleTableEntry/7 failed”);    </p>
+</li>
+<li><p>var entry = ReadSystemMemory&lt;NT._HANDLE_TABLE_ENTRY&gt;((ulong)entryAddress);    </p>
+</li>
+<li><p>bool didElevate = WriteSystemMemory((ulong)entryAddress + sizeof(ulong), (ulong)desiredAccess);    </p>
+</li>
+<li><p>Log.LogInfo($“Elevating {handle.ToString(“x2“)} -&gt; {desiredAccess.ToString(“x2“)} ? {didElevate}”);    </p>
+</li>
+<li><p>return didElevate;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>publicstaticvoid UpdateDynamicData()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>NT._OSVERSIONINFOEXW osvi = new NT._OSVERSIONINFOEXW()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>dwOSVersionInfoSize = (uint)Marshal.SizeOf(typeof(NT._OSVERSIONINFOEXW))    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>NT.RtlGetVersion(&amp;osvi);    </p>
+</li>
+<li><p>g_VersionLong = (osvi.dwMajorVersion &lt;&lt; 16) | (osvi.dwMinorVersion &lt;&lt; 8) | osvi.wServicePackMajor;    </p>
+</li>
+<li><p>switch (g_VersionLong)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>case 0x060101/*win 7*/:    </p>
+</li>
+<li><p>g_IsWindows7Machine = true;    </p>
+</li>
+<li><p>g_OffsetDirectoryTable = 0x028;    </p>
+</li>
+<li><p>g_OffsetProcessId = 0x180;    </p>
+</li>
+<li><p>g_OffsetProcessLinks = 0x188;    </p>
+</li>
+<li><p>g_OffsetObjectTable = 0x200;    </p>
+</li>
+<li><p>break;    </p>
+</li>
+<li><p>case 0x060200/*win 8*/:    </p>
+</li>
+<li><p>case 0x060300/*win 8.1*/:    </p>
+</li>
+<li><p>g_OffsetDirectoryTable = 0x028;    </p>
+</li>
+<li><p>g_OffsetProcessId = 0x2e0;    </p>
+</li>
+<li><p>g_OffsetProcessLinks = 0x2e8;    </p>
+</li>
+<li><p>g_OffsetObjectTable = 0x408;    </p>
+</li>
+<li><p>break;    </p>
+</li>
+<li><p>case 0x0A0000 /*win 10*/:    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>switch (osvi.dwBuildNumber)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>case 10240:    </p>
+</li>
+<li><p>case 10586:    </p>
+</li>
+<li><p>case 14393:    </p>
+</li>
+<li><p>g_OffsetDirectoryTable = 0x028;    </p>
+</li>
+<li><p>g_OffsetProcessId = 0x2E8;    </p>
+</li>
+<li><p>g_OffsetProcessLinks = 0x2F0;    </p>
+</li>
+<li><p>g_OffsetObjectTable = 0x418;    </p>
+</li>
+<li><p>break;    </p>
+</li>
+<li><p>case 15063:    </p>
+</li>
+<li><p>g_OffsetDirectoryTable = 0x028;    </p>
+</li>
+<li><p>g_OffsetProcessId = 0x2E0;    </p>
+</li>
+<li><p>g_OffsetProcessLinks = 0x2E8;    </p>
+</li>
+<li><p>g_OffsetObjectTable = 0x418;    </p>
+</li>
+<li><p>break;    </p>
+</li>
+<li><p>default:    </p>
+</li>
+<li><p>thrownew Exception(“Unsupported dwBuildNumber”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>break;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>default:    </p>
+</li>
+<li><p>thrownew Exception(“Unsupported version_long”);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>// IDA F5 LOL  </p>
+</li>
+<li><p>privatestatic NT._HANDLE_TABLE_ENTRY* ExpLookupHandleTableEntryWin7(void* HandleTable, ulong Handle)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ulong v2;     // r8@2  </p>
+</li>
+<li><p>ulong v3;     // rcx@2  </p>
+</li>
+<li><p>ulong v4;     // r8@2  </p>
+</li>
+<li><p>ulong result; // rax@4  </p>
+</li>
+<li><p>ulong v6;     // [sp+8h] [bp+8h]@1  </p>
+</li>
+<li><p>ulong table = (ulong)HandleTable;    </p>
+</li>
+<li><p>v6 = Handle;    </p>
+</li>
+<li><p>v6 = Handle &amp; 0xFFFFFFFC;    </p>
+</li>
+<li><p>if (v6 &gt;= <em>(uint</em>)(table + 92))    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>result = 0;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>v2 = (<em>(ulong</em>)table);    </p>
+</li>
+<li><p>v3 = (<em>(ulong</em>)table) &amp; 3;    </p>
+</li>
+<li><p>v4 = v2 – (uint)v3;    </p>
+</li>
+<li><p>if ((uint)v3 &gt; 0)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>if ((uint)v3 == 1)    </p>
+</li>
+<li><p>result = ReadSystemMemory<ulong>((((Handle – (Handle &amp; 0x3FF)) &gt;&gt; 7) + v4)) + 4 * (Handle &amp; 0x3FF);    </ulong></p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>result = ReadSystemMemory<ulong>((ulong)(ReadSystemMemory<ulong>((ulong)(((((Handle – (Handle &amp; 0x3FF)) &gt;&gt; 7) – (((Handle – (Handle &amp; 0x3FF)) &gt;&gt; 7) &amp; 0xFFF)) &gt;&gt; 9) + v4)) + (((Handle – (Handle &amp; 0x3FF)) &gt;&gt; 7) &amp; 0xFFF))) + 4 * (Handle &amp; 0x3FF);    </ulong></ulong></p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>result = v4 + 4 * Handle;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>return (NT._HANDLE_TABLE_ENTRY*)result;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>privatestatic NT._HANDLE_TABLE_ENTRY* ExpLookupHandleTableEntry(void* HandleTable, ulong Handle)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ulong v2; // rdx@1  </p>
+</li>
+<li><p>long v3; // r8@2  </p>
+</li>
+<li><p>ulong result; // rax@4  </p>
+</li>
+<li><p>ulong v5;    </p>
+</li>
+<li><p>ulong a1 = (ulong)HandleTable;    </p>
+</li>
+<li><p>v2 = Handle &amp; 0xFFFFFFFFFFFFFFFCu;    </p>
+</li>
+<li><p>if (v2 &gt;= <em>(uint</em>)a1)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>result = 0;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>v3 = (long)<em>(ulong</em>)(a1 + 8);    </p>
+</li>
+<li><p>if ((<em>(ulong</em>)(a1 + 8) &amp; 3) &gt; 0)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>if ((<em>(uint</em>)(a1 + 8) &amp; 3) == 1)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>v5 = ReadSystemMemory<ulong>((ulong)v3 + 8 * (v2 &gt;&gt; 10) – 1);    </ulong></p>
+</li>
+<li><p>result = v5 + 4 * (v2 &amp; 0x3FF);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>v5 = ReadSystemMemory<ulong>(ReadSystemMemory<ulong>((ulong)v3 + 8 * (v2 &gt;&gt; 19) – 2) + 8 * ((v2 &gt;&gt; 10) &amp; 0x1FF));    </ulong></ulong></p>
+</li>
+<li><p>result = v5 + 4 * (v2 &amp; 0x3FF);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>else</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>result = (ulong)v3 + 4 * v2;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>return (NT._HANDLE_TABLE_ENTRY*)result;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>// MEMORY FUNCTIONS  </p>
+</li>
+<li><p>privatestatic T ReadSystemMemory<t>(ulong basepointer)    </t></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var buf = (ulong*)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));    </p>
+</li>
+<li><p>if (!ReadSystemMemory(basepointer, (ulong)buf, (uint)Marshal.SizeOf(typeof(T))))    </p>
+</li>
+<li><p>thrownew Exception(“Read failed”);    </p>
+</li>
+<li><p>T result = (T)Marshal.PtrToStructure((IntPtr)buf, typeof(T));    </p>
+</li>
+<li><p>Marshal.FreeHGlobal((IntPtr)buf);    </p>
+</li>
+<li><p>return result;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>privatestaticbool WriteSystemMemory<t>(ulong basepointer, T value)    </t></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var buf = (ulong)Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));    </p>
+</li>
+<li><p>Marshal.StructureToPtr(value, (IntPtr)buf, false);    </p>
+</li>
+<li><p>bool success = WriteSystemMemory(basepointer, buf, (uint)Marshal.SizeOf(typeof(T)));    </p>
+</li>
+<li><p>Marshal.FreeHGlobal((IntPtr)buf);    </p>
+</li>
+<li><p>return success;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>privatestaticbool ReadSystemMemory(ulong basepointer, ulong buf, uint len)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ulong phys = Driver.TranslateLinearAddress(g_Context.DirectoryBase, basepointer);    </p>
+</li>
+<li><p>return Driver.ReadPhysicalAddress(phys, buf, len);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>privatestaticbool WriteSystemMemory(ulong basepointer, ulong buf, uint len)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ulong phys = Driver.TranslateLinearAddress(g_Context.DirectoryBase, basepointer);    </p>
+</li>
+<li><p>return Driver.WritePhysicalAddress(phys, buf, len);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>privatestaticulong GetKernelBase()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ulong buffer;    </p>
+</li>
+<li><p>uint bufferSize = 2048;    </p>
+</li>
+<li><p>buffer = (ulong)Marshal.AllocHGlobal((int)bufferSize);    </p>
+</li>
+<li><p>uint status = NT.NtQuerySystemInformation(11/*SystemModuleInformation*/, buffer, (uint)bufferSize, out bufferSize);    </p>
+</li>
+<li><p>if (status == 0xC0000004L/*STATUS_INFO_LENGTH_MISMATCH*/)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>Marshal.FreeHGlobal((IntPtr)buffer);    </p>
+</li>
+<li><p>buffer = (ulong)Marshal.AllocHGlobal((int)bufferSize);    </p>
+</li>
+<li><p>status = NT.NtQuerySystemInformation(11/*SystemModuleInformation*/, buffer, (uint)bufferSize, out bufferSize);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>if (status != 0)    </p>
+</li>
+<li><p>thrownew Exception(“GetKernelBase Failed”);    </p>
+</li>
+<li><p>NT._RTL_PROCESS_MODULES* modulesPointer = (NT._RTL_PROCESS_MODULES*)buffer;    </p>
+</li>
+<li><p>return (ulong)modulesPointer-&gt;Modules.ImageBase;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>privatestaticbyte* FindKernelProcedure(string szName)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ulong ntoskrnlHandle = NT.LoadLibrary(“ntoskrnl.exe”);    </p>
+</li>
+<li><p>ulong kernelBase = GetKernelBase();    </p>
+</li>
+<li><p>ulong functionPointer = NT.GetProcAddress(ntoskrnlHandle, szName);    </p>
+</li>
+<li><p>return (byte*)(functionPointer – ntoskrnlHandle + kernelBase);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>privatestatic NT.ProcessContext FindProcessInfo(uint targetProcessId)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>NT.ProcessContext processContext = new NT.ProcessContext()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>ProcessId = 0    </p>
+</li>
+<li><p>};    </p>
+</li>
+<li><p>// GET POINTER TO THE SYSTEM EPROCESS  </p>
+</li>
+<li><p>ulong eprocessPointer = (ulong)FindKernelProcedure(“PsInitialSystemProcess”);    </p>
+</li>
+<li><p>// READ EPROCESS ADDRESS  </p>
+</li>
+<li><p>ulong ntosEntry = Driver.ReadSystemAddress<ulong>(eprocessPointer);    </ulong></p>
+</li>
+<li><p>var listHead = ntosEntry + g_OffsetProcessLinks;    </p>
+</li>
+<li><p>var lastLink = Driver.ReadSystemAddress<ulong>(listHead + sizeof(ulong));    </ulong></p>
+</li>
+<li><p>// ITERATE ALL PROCESSES  </p>
+</li>
+<li><p>for (var currentLink = listHead; currentLink != lastLink; currentLink = Driver.ReadSystemAddress<ulong>(currentLink))    </ulong></p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var currentEntry = currentLink – g_OffsetProcessLinks;    </p>
+</li>
+<li><p>var processId = Driver.ReadSystemAddress<ulong>(currentEntry + g_OffsetProcessId);    </ulong></p>
+</li>
+<li><p>// PID is a match  </p>
+</li>
+<li><p>if (processId == targetProcessId)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>processContext.ProcessId = targetProcessId;    </p>
+</li>
+<li><p>processContext.DirectoryBase = Driver.ReadSystemAddress<ulong>(currentEntry + g_OffsetDirectoryTable);    </ulong></p>
+</li>
+<li><p>processContext.KernelEntry = currentEntry;    </p>
+</li>
+<li><p>break;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>return processContext;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>[StructLayout(LayoutKind.Sequential)]    </p>
+</li>
+<li><p>publicstruct _HANDLE_TABLE    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>publiculong TableCode;    </p>
+</li>
+<li><p>publiculong QuotaProcess;    </p>
+</li>
+<li><p>publiculong UniqueProcessId;    </p>
+</li>
+<li><p>publiculong HandleLock;    </p>
+</li>
+<li><p>publiculong Flink;    </p>
+</li>
+<li><p>publiculong Blink;    </p>
+</li>
+<li><p>publiculong HandleContentionEvent;    </p>
+</li>
+<li><p>publiculong DebugInfo;    </p>
+</li>
+<li><p>publicint ExtraInfoPages;    </p>
+</li>
+<li><p>publicuint Flags;    </p>
+</li>
+<li><p>publicuint FirstFreeHandle;    </p>
+</li>
+<li><p>publiculong LastFreeHandleEntry;    </p>
+</li>
+<li><p>publicuint HandleCount;    </p>
+</li>
+<li><p>publicuint NextHandleNeedingPool;    </p>
+</li>
+<li><p>publicuint HandleCountHighWatermark;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://iuu.me/battleye-bypass/" data-id="cjvp22zzy002xsomhzg189kty" class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/battleye/">battleye</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/bypass/">bypass</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cpu-z/">cpu-z</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/csharp/">csharp</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/dirver/">dirver</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/survivorship/" class="article-nav-link">
+        <strong class="article-nav-caption">Newer posts</strong>
+        <div class="article-nav-title">
+          
+            幸存者偏差:你根本不了解这个真实世界
+          
+        </div>
+      </a>
+    
+    
+      <a href="/analysisjson/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">Newtonsoft.Json简单解析多嵌套Json的某个属性</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  
+
+</article>
+
+
+
+  <div id="lv-container" data-id="city" data-uid="MTAyMC80NDIzOS8yMDc3Mg==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+</div>
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+    <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2019 iUU</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="iUU"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archives</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+    <meta name="keywords" content="iuu,jonah,哎呦呦,子非鱼安知鱼之乐">
+  
+  
+    <meta name="description" content="子非鱼，安知鱼之乐。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    通过win32API管理无线网络 |
+    
+    iUU</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-controlwifibywin32api" class="article article-type-post" itemscope="" itemprop="blogPost" data-scroll-reveal="">
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      通过win32API管理无线网络
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/controlwifibywin32api/" class="article-date">
+  <time datetime="2017-05-22T05:57:30.000Z" itemprop="datePublished">2017-05-22</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Code/">Code</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <p><img src="https://iuu.me/wp-content/uploads/2017/05/connection-300x169.jpg" alt=""> 许久没登录的百度贴吧，今天偶然去逛了下。私信里面收到了很多小盆友们关于之前一个大学期间写的wifi小工具的一些疑问。 顺便一起解答了吧。 其实原理很简单，无非就是首先建立一个wifi热点，然后把当前Internet的连接共享给这个热点就可以了。 不过在校期间因为校方和电信有合作关系，所以被强制安装了电信的netkeeper来实现pppoe拨号上网。我个人是比较反感这种脱了裤子放屁的绑架形式的，你搞一个软件来代替传统的windows pppoe拨号无非就是给自身利益带来最大化或者来说拿到更高级的监控及控制权。相信各位大部分在校期间都听说过这个臭名昭扬的电信出品的软件。每次拨通上去要先给你推几条广告赚点曝光量，然后禁用了系统本身的ICS共享。这样一来可以杜绝一个帐号被N个人使用的情况，伤害了自身的利益。但是手机是无辜的啊，难不成放着身边的网络不用还要去给移动运营商做贡献。。。后面就写了这个小工具来成就手机刷微博看视频的梦想。 逻辑简单叙述下吧，首先就是检测netkeeper进程，监控心跳包应答内容。出现后通过钩子拿出句柄，把进程杀掉或者暂停都可以。出现心跳包模拟应答给服务器，然后就是开始之前说的那样建立热点巴拉巴拉的。 建立热点的方式可以用console来建立或者通过win32的API来建立均可。 Console:</p>
+<ol>
+<li>netsh wlan set hostednetwork mode=allow    </li>
+<li>netsh wlan set hostednetwork ssid=’testwifi’ key=1234567890    </li>
+<li>netsh wlan start hostednetwork    </li>
+</ol>
+<p>win32API:</p>
+<ol>
+<li><p>///   </p>
+</li>
+<li><p>/// 初始化  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>privatevoid Init()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>WlanUtils.Throw_On_Win32_Error(wlanapi.WlanOpenHandle(wlanapi.WLAN_CLIENT_VERSION_VISTA, IntPtr.Zero, outthis._ServerVersion, refthis._WlanHandle));    </p>
+</li>
+<li><p>WLAN_NOTIFICATION_SOURCE notifSource;    </p>
+</li>
+<li><p>WlanUtils.Throw_On_Win32_Error(wlanapi.WlanRegisterNotification(this._WlanHandle, WLAN_NOTIFICATION_SOURCE.All, true, this._notificationCallback, IntPtr.Zero, IntPtr.Zero, out notifSource));    </p>
+</li>
+<li><p>WLAN_HOSTED_NETWORK_REASON failReason = this.InitSettings();    </p>
+</li>
+<li><p>if (failReason != WLAN_HOSTED_NETWORK_REASON.wlan_hosted_network_reason_success)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>thrownew Exception(“Init Error WlanHostedNetworkInitSettings: “ + failReason.ToString());    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>wlanapi.WlanCloseHandle(this._WlanHandle, IntPtr.Zero);    </p>
+</li>
+<li><p>throw;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// 设置SSID及连接数  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>public WLAN_HOSTED_NETWORK_REASON SetConnectionSettings(string hostedNetworkSSID, int maxNumberOfPeers)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>WLAN_HOSTED_NETWORK_REASON failReason;    </p>
+</li>
+<li><p>WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS settings = new WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS();    </p>
+</li>
+<li><p>settings.hostedNetworkSSID = WlanUtils.ConvertStringToDOT11_SSID(hostedNetworkSSID);    </p>
+</li>
+<li><p>settings.dwMaxNumberOfPeers = (uint)maxNumberOfPeers;    </p>
+</li>
+<li><p>IntPtr settingsPtr = Marshal.AllocHGlobal(Marshal.SizeOf(settings));    </p>
+</li>
+<li><p>Marshal.StructureToPtr(settings, settingsPtr, false);    </p>
+</li>
+<li><p>WlanUtils.Throw_On_Win32_Error(    </p>
+</li>
+<li><p>wlanapi.WlanHostedNetworkSetProperty(    </p>
+</li>
+<li><p>this._WlanHandle,    </p>
+</li>
+<li><p>WLAN_HOSTED_NETWORK_OPCODE.wlan_hosted_network_opcode_connection_settings,    </p>
+</li>
+<li><p>(uint)Marshal.SizeOf(settings), settingsPtr, out failReason, IntPtr.Zero    </p>
+</li>
+<li><p>)    </p>
+</li>
+<li><p>);    </p>
+</li>
+<li><p>return failReason;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// 设置密码  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>public WLAN_HOSTED_NETWORK_REASON SetSecondaryKey(string passKey)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>WLAN_HOSTED_NETWORK_REASON failReason;    </p>
+</li>
+<li><p>WlanUtils.Throw_On_Win32_Error(wlanapi.WlanHostedNetworkSetSecondaryKey(this._WlanHandle, (uint)(passKey.Length + 1), passKey, true, true, out failReason, IntPtr.Zero));    </p>
+</li>
+<li><p>return failReason;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// 查询状态   </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>public WLAN_HOSTED_NETWORK_STATUS QueryStatus()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>WLAN_HOSTED_NETWORK_STATUS status;    </p>
+</li>
+<li><p>WlanUtils.Throw_On_Win32_Error(wlanapi.WlanHostedNetworkQueryStatus(this._WlanHandle, out status, IntPtr.Zero));    </p>
+</li>
+<li><p>return status;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// 启动热点  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>publicvoid StartHostedNetwork()    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>this.ForceStop();    </p>
+</li>
+<li><p>var failReason = this.StartUsing();    </p>
+</li>
+<li><p>if (failReason != WLAN_HOSTED_NETWORK_REASON.wlan_hosted_network_reason_success)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>thrownew Exception(“Could Not Start Hosted Network!\n\n” + failReason.ToString());    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>this.ForceStop();    </p>
+</li>
+<li><p>throw;    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>/// 设置ICS共享  </p>
+</li>
+<li><p>///   </p>
+</li>
+<li><p>publicstaticvoid EnableInternetConnectionSharing(string Share)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>try</p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>string connectionToShare = Share;    </p>
+</li>
+<li><p>string sharedForConnection = “无线网络连接 2”;    </p>
+</li>
+<li><p>var manager = new NetSharingManager();    </p>
+</li>
+<li><p>var connections = manager.EnumEveryConnection;    </p>
+</li>
+<li><p>foreach (INetConnection c in connections)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>var props = manager.NetConnectionProps[c];    </p>
+</li>
+<li><p>var sharingCfg = manager.INetSharingConfigurationForINetConnection[c];    </p>
+</li>
+<li><p>if (props.Name == connectionToShare)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>sharingCfg.EnableSharing(tagSHARINGCONNECTIONTYPE.ICSSHARINGTYPE_PUBLIC);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>elseif (props.Name == sharedForConnection)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>sharingCfg.EnableSharing(tagSHARINGCONNECTIONTYPE.ICSSHARINGTYPE_PRIVATE);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>catch (Exception c)    </p>
+</li>
+<li><p>{    </p>
+</li>
+<li><p>MessageBox.Show(c.Message);    </p>
+</li>
+<li><p>}    </p>
+</li>
+<li><p>}</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://iuu.me/controlwifibywin32api/" data-id="cjvp22zyq0007somhcxjr0lpo" class="article-share-link">Share</a>
+      
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/win32apiinstallwindowsservice/" class="article-nav-link">
+        <strong class="article-nav-caption">Newer posts</strong>
+        <div class="article-nav-title">
+          
+            Win32API安装windows服务
+          
+        </div>
+      </a>
+    
+    
+      <a href="/lambda/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">lambda表达式</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  
+
+</article>
+
+
+
+  <div id="lv-container" data-id="city" data-uid="MTAyMC80NDIzOS8yMDc3Mg==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+</div>
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+    <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2019 iUU</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="iUU"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archives</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>
