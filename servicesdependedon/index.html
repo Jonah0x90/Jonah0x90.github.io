@@ -11,7 +11,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
-    Windows服务依赖关系 |
+    Windows服务依赖关系注册 |
     
     iUU</title>
   
@@ -35,7 +35,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      Windows服务依赖关系
+      Windows服务依赖关系注册
     </h1>
   
 
@@ -61,52 +61,12 @@
       
 
       
-        <p><img src="https://iuu.me/wp-content/uploads/2018/10/1540281144714-300x176.jpg" alt=""> 适用于windows服务需要处理下游数据依赖于其他的上游服务生产。 ProjectInstaller的Install方法里面有一个ServiceInstaller.ServicesDependedOn 属性 设置windows服务的依赖关系。</p>
-<ol>
-<li><p>using System;  </p>
-</li>
-<li><p>using System.Collections;  </p>
-</li>
-<li><p>using System.Collections.Generic;  </p>
-</li>
-<li><p>using System.ComponentModel;  </p>
-</li>
-<li><p>using System.Configuration.Install;  </p>
-</li>
-<li><p>using System.Linq;  </p>
-</li>
-<li><p>namespace MQSupportService  </p>
-</li>
-<li><p>{  </p>
-</li>
-<li><p>[RunInstaller(true)]  </p>
-</li>
-<li><p>public partial class ProjectInstaller : System.Configuration.Install.Installer  </p>
-</li>
-<li><p>{  </p>
-</li>
-<li><p>public ProjectInstaller()  </p>
-</li>
-<li><p>{  </p>
-</li>
-<li><p>InitializeComponent();  </p>
-</li>
-<li><p>//依赖服务注册</p>
-</li>
-<li><p>serviceInstaller1.ServicesDependedOn = newstring[] { “MSMQ” };  </p>
-</li>
-<li><p>}  </p>
-</li>
-<li><p>}  </p>
-</li>
-<li><p>}</p>
-</li>
-</ol>
-
+        <p>适用于windows服务需要处理下游数据依赖于其他的上游服务生产。 ProjectInstaller的Install方法里面有一个ServiceInstaller.ServicesDependedOn 属性 设置windows服务的依赖关系。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">using</span> System;  </span><br><span class="line"> <span class="keyword">using</span> System.Collections;  </span><br><span class="line"> <span class="keyword">using</span> System.Collections.Generic;  </span><br><span class="line"> <span class="keyword">using</span> System.ComponentModel;  </span><br><span class="line"> <span class="keyword">using</span> System.Configuration.Install;  </span><br><span class="line"> <span class="keyword">using</span> System.Linq;  </span><br><span class="line"></span><br><span class="line"> <span class="keyword">namespace</span> <span class="title">MQSupportService</span>  </span><br><span class="line"> &#123;  </span><br><span class="line">      [<span class="meta">RunInstaller(true)</span>]  </span><br><span class="line">      public partial class ProjectInstaller : System.Configuration.Install.Installer  </span><br><span class="line">      &#123;  </span><br><span class="line">          <span class="function"><span class="keyword">public</span> <span class="title">ProjectInstaller</span>(<span class="params"></span>)  </span></span><br><span class="line"><span class="function"></span>          &#123;  </span><br><span class="line">              InitializeComponent();  </span><br><span class="line">              <span class="comment">//依赖服务注册</span></span><br><span class="line">              serviceInstaller1.ServicesDependedOn = newstring\[\] &#123; <span class="string">"MSMQ"</span> &#125;;  </span><br><span class="line">          &#125;  </span><br><span class="line">      &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://iuu.me/servicesdependedon/" data-id="cjvp22zz5000tsomh8r4yszll" class="article-share-link">Share</a>
+      <a data-url="https://iuu.me/servicesdependedon/" data-id="cjx4hk0500017ufmhefy55aas" class="article-share-link">Share</a>
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/csharp/">csharp</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/windows-service/">windows service</a></li></ul>
 
@@ -118,19 +78,10 @@
     
   <nav class="article-nav">
     
-      <a href="/actionscope/" class="article-nav-link">
-        <strong class="article-nav-caption">Newer posts</strong>
-        <div class="article-nav-title">
-          
-            python作用域
-          
-        </div>
-      </a>
     
-    
-      <a href="/lesuploaddatetosap/" class="article-nav-link">
+      <a href="/aud-azuresearch-indexer-document/" class="article-nav-link">
         <strong class="article-nav-caption">Olde posts</strong>
-        <div class="article-nav-title">LES上传业务交易数据至SAP</div>
+        <div class="article-nav-title">Azure Search 索引内容管理</div>
       </a>
     
   </nav>

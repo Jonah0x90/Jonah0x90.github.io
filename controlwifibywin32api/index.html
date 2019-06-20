@@ -11,7 +11,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
-    通过win32API管理无线网络 |
+    win32API管理无线网络 |
     
     iUU</title>
   
@@ -35,7 +35,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      通过win32API管理无线网络
+      win32API管理无线网络
     </h1>
   
 
@@ -61,241 +61,19 @@
       
 
       
-        <p><img src="https://iuu.me/wp-content/uploads/2017/05/connection-300x169.jpg" alt=""> 许久没登录的百度贴吧，今天偶然去逛了下。私信里面收到了很多小盆友们关于之前一个大学期间写的wifi小工具的一些疑问。 顺便一起解答了吧。 其实原理很简单，无非就是首先建立一个wifi热点，然后把当前Internet的连接共享给这个热点就可以了。 不过在校期间因为校方和电信有合作关系，所以被强制安装了电信的netkeeper来实现pppoe拨号上网。我个人是比较反感这种脱了裤子放屁的绑架形式的，你搞一个软件来代替传统的windows pppoe拨号无非就是给自身利益带来最大化或者来说拿到更高级的监控及控制权。相信各位大部分在校期间都听说过这个臭名昭扬的电信出品的软件。每次拨通上去要先给你推几条广告赚点曝光量，然后禁用了系统本身的ICS共享。这样一来可以杜绝一个帐号被N个人使用的情况，伤害了自身的利益。但是手机是无辜的啊，难不成放着身边的网络不用还要去给移动运营商做贡献。。。后面就写了这个小工具来成就手机刷微博看视频的梦想。 逻辑简单叙述下吧，首先就是检测netkeeper进程，监控心跳包应答内容。出现后通过钩子拿出句柄，把进程杀掉或者暂停都可以。出现心跳包模拟应答给服务器，然后就是开始之前说的那样建立热点巴拉巴拉的。 建立热点的方式可以用console来建立或者通过win32的API来建立均可。 Console:</p>
-<ol>
-<li>netsh wlan set hostednetwork mode=allow    </li>
-<li>netsh wlan set hostednetwork ssid=’testwifi’ key=1234567890    </li>
-<li>netsh wlan start hostednetwork    </li>
-</ol>
-<p>win32API:</p>
-<ol>
-<li><p>///   </p>
-</li>
-<li><p>/// 初始化  </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>privatevoid Init()    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>try</p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>WlanUtils.Throw_On_Win32_Error(wlanapi.WlanOpenHandle(wlanapi.WLAN_CLIENT_VERSION_VISTA, IntPtr.Zero, outthis._ServerVersion, refthis._WlanHandle));    </p>
-</li>
-<li><p>WLAN_NOTIFICATION_SOURCE notifSource;    </p>
-</li>
-<li><p>WlanUtils.Throw_On_Win32_Error(wlanapi.WlanRegisterNotification(this._WlanHandle, WLAN_NOTIFICATION_SOURCE.All, true, this._notificationCallback, IntPtr.Zero, IntPtr.Zero, out notifSource));    </p>
-</li>
-<li><p>WLAN_HOSTED_NETWORK_REASON failReason = this.InitSettings();    </p>
-</li>
-<li><p>if (failReason != WLAN_HOSTED_NETWORK_REASON.wlan_hosted_network_reason_success)    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>thrownew Exception(“Init Error WlanHostedNetworkInitSettings: “ + failReason.ToString());    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>catch</p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>wlanapi.WlanCloseHandle(this._WlanHandle, IntPtr.Zero);    </p>
-</li>
-<li><p>throw;    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>/// 设置SSID及连接数  </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>public WLAN_HOSTED_NETWORK_REASON SetConnectionSettings(string hostedNetworkSSID, int maxNumberOfPeers)    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>WLAN_HOSTED_NETWORK_REASON failReason;    </p>
-</li>
-<li><p>WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS settings = new WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS();    </p>
-</li>
-<li><p>settings.hostedNetworkSSID = WlanUtils.ConvertStringToDOT11_SSID(hostedNetworkSSID);    </p>
-</li>
-<li><p>settings.dwMaxNumberOfPeers = (uint)maxNumberOfPeers;    </p>
-</li>
-<li><p>IntPtr settingsPtr = Marshal.AllocHGlobal(Marshal.SizeOf(settings));    </p>
-</li>
-<li><p>Marshal.StructureToPtr(settings, settingsPtr, false);    </p>
-</li>
-<li><p>WlanUtils.Throw_On_Win32_Error(    </p>
-</li>
-<li><p>wlanapi.WlanHostedNetworkSetProperty(    </p>
-</li>
-<li><p>this._WlanHandle,    </p>
-</li>
-<li><p>WLAN_HOSTED_NETWORK_OPCODE.wlan_hosted_network_opcode_connection_settings,    </p>
-</li>
-<li><p>(uint)Marshal.SizeOf(settings), settingsPtr, out failReason, IntPtr.Zero    </p>
-</li>
-<li><p>)    </p>
-</li>
-<li><p>);    </p>
-</li>
-<li><p>return failReason;    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>/// 设置密码  </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>public WLAN_HOSTED_NETWORK_REASON SetSecondaryKey(string passKey)    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>WLAN_HOSTED_NETWORK_REASON failReason;    </p>
-</li>
-<li><p>WlanUtils.Throw_On_Win32_Error(wlanapi.WlanHostedNetworkSetSecondaryKey(this._WlanHandle, (uint)(passKey.Length + 1), passKey, true, true, out failReason, IntPtr.Zero));    </p>
-</li>
-<li><p>return failReason;    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>/// 查询状态   </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>public WLAN_HOSTED_NETWORK_STATUS QueryStatus()    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>WLAN_HOSTED_NETWORK_STATUS status;    </p>
-</li>
-<li><p>WlanUtils.Throw_On_Win32_Error(wlanapi.WlanHostedNetworkQueryStatus(this._WlanHandle, out status, IntPtr.Zero));    </p>
-</li>
-<li><p>return status;    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>/// 启动热点  </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>publicvoid StartHostedNetwork()    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>try</p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>this.ForceStop();    </p>
-</li>
-<li><p>var failReason = this.StartUsing();    </p>
-</li>
-<li><p>if (failReason != WLAN_HOSTED_NETWORK_REASON.wlan_hosted_network_reason_success)    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>thrownew Exception(“Could Not Start Hosted Network!\n\n” + failReason.ToString());    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>catch</p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>this.ForceStop();    </p>
-</li>
-<li><p>throw;    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>/// 设置ICS共享  </p>
-</li>
-<li><p>///   </p>
-</li>
-<li><p>publicstaticvoid EnableInternetConnectionSharing(string Share)    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>try</p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>string connectionToShare = Share;    </p>
-</li>
-<li><p>string sharedForConnection = “无线网络连接 2”;    </p>
-</li>
-<li><p>var manager = new NetSharingManager();    </p>
-</li>
-<li><p>var connections = manager.EnumEveryConnection;    </p>
-</li>
-<li><p>foreach (INetConnection c in connections)    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>var props = manager.NetConnectionProps[c];    </p>
-</li>
-<li><p>var sharingCfg = manager.INetSharingConfigurationForINetConnection[c];    </p>
-</li>
-<li><p>if (props.Name == connectionToShare)    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>sharingCfg.EnableSharing(tagSHARINGCONNECTIONTYPE.ICSSHARINGTYPE_PUBLIC);    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>elseif (props.Name == sharedForConnection)    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>sharingCfg.EnableSharing(tagSHARINGCONNECTIONTYPE.ICSSHARINGTYPE_PRIVATE);    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>catch (Exception c)    </p>
-</li>
-<li><p>{    </p>
-</li>
-<li><p>MessageBox.Show(c.Message);    </p>
-</li>
-<li><p>}    </p>
-</li>
-<li><p>}</p>
-</li>
-</ol>
+        <p> &#8195;&#8195;许久没登录的百度贴吧，今天偶然去逛了下。私信里面收到了很多小盆友们关于之前一个求学期间写的wifi小工具的一些疑问。顺便一起解答了吧。<br>&#8195;&#8195;windows建立个人热点后把当前Internet连接共享给你的个人热点。针对我们学校使用电信出品的NetKeeper进行pppoe拨号，首先需要在进程中找到NetKeeper本身，然后利用句柄移除NetKeeper子线程对ICS的占用。不要尝试去挂起主进程，Netkeeper的服务器会与在线的客户端进行心跳包验证。验证失败则会把客户端强制踢下线。</p>
+<a id="more"></a>
 
+ <figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">netsh wlan set hostednetwork mode=allow    </span><br><span class="line">netsh wlan set hostednetwork ssid=’testwifi’ key=1234567890    </span><br><span class="line">netsh wlan start hostednetwork</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"><span class="comment"><span class="doctag">///</span> 初始化  </span></span><br><span class="line"><span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">Init</span>(<span class="params"></span>)    </span></span><br><span class="line"><span class="function"></span>&#123;    </span><br><span class="line">    <span class="keyword">try</span></span><br><span class="line">    &#123;    </span><br><span class="line">        WlanUtils.Throw _On_Win32_Error(wlanapi.WlanOpenHandle(wlanapi.WLAN_CLIENT_VERSION_VISTA, IntPtr.Zero, outthis._ServerVersion, refthis._WlanHandle));    </span><br><span class="line"></span><br><span class="line">         WLAN_NOTIFICATION_SOURCE notifSource;    </span><br><span class="line">         WlanUtils.Throw_On_Win32_Error(wlanapi.WlanRegisterNotification(<span class="keyword">this</span>._WlanHandle, WLAN_NOTIFICATION_SOURCE.All, <span class="literal">true</span>, <span class="keyword">this</span>._notificationCallback, IntPtr.Zero, IntPtr.Zero, <span class="keyword">out</span> notifSource));    </span><br><span class="line"></span><br><span class="line">         WLAN_HOSTED_NETWORK_REASON failReason = <span class="keyword">this</span>.InitSettings();    </span><br><span class="line">         <span class="keyword">if</span> (failReason != WLAN_HOSTED_NETWORK_REASON.wlan_hosted_network_reason_success)    </span><br><span class="line">         &#123;    </span><br><span class="line">             <span class="function">thrownew <span class="title">Exception</span>(<span class="params">“Init Error WlanHostedNetworkInitSettings: “ + failReason.ToString(</span>))</span>;    </span><br><span class="line">         &#125;    </span><br><span class="line"></span><br><span class="line">     &#125;    </span><br><span class="line">     <span class="keyword">catch</span></span><br><span class="line">     &#123;    </span><br><span class="line">         wlanapi.WlanCloseHandle(<span class="keyword">this</span>._WlanHandle, IntPtr.Zero);    </span><br><span class="line">         <span class="keyword">throw</span>;    </span><br><span class="line">     &#125;    </span><br><span class="line"> &#125;    </span><br><span class="line"></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span> 设置SSID及连接数  </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">public</span> WLAN_HOSTED_NETWORK_REASON <span class="title">SetConnectionSettings</span>(<span class="params"><span class="keyword">string</span> hostedNetworkSSID, <span class="keyword">int</span> maxNumberOfPeers</span>)    </span></span><br><span class="line"><span class="function"></span> &#123;    </span><br><span class="line">     WLAN_HOSTED_NETWORK_REASON failReason;    </span><br><span class="line"></span><br><span class="line">     WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS settings = <span class="keyword">new</span> WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS();    </span><br><span class="line">     settings.hostedNetworkSSID = WlanUtils.ConvertStringToDOT11_SSID(hostedNetworkSSID);    </span><br><span class="line">     settings.dwMaxNumberOfPeers = (<span class="keyword">uint</span>)maxNumberOfPeers;    </span><br><span class="line"></span><br><span class="line">     IntPtr settingsPtr = Marshal.AllocHGlobal(Marshal.SizeOf(settings));    </span><br><span class="line">     Marshal.StructureToPtr(settings, settingsPtr, <span class="literal">false</span>);    </span><br><span class="line"></span><br><span class="line">     WlanUtils.Throw_On_Win32_Error(    </span><br><span class="line">         wlanapi.WlanHostedNetworkSetProperty(    </span><br><span class="line">             <span class="keyword">this</span>._WlanHandle,    </span><br><span class="line">             WLAN_HOSTED_NETWORK_OPCODE.wlan_hosted_network_opcode_connection_settings,    </span><br><span class="line">             (<span class="keyword">uint</span>)Marshal.SizeOf(settings), settingsPtr, <span class="keyword">out</span> failReason, IntPtr.Zero    </span><br><span class="line">         )    </span><br><span class="line">     );    </span><br><span class="line"></span><br><span class="line">     <span class="keyword">return</span> failReason;    </span><br><span class="line"> &#125;    </span><br><span class="line"></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span> 设置密码  </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">public</span> WLAN_HOSTED_NETWORK_REASON <span class="title">SetSecondaryKey</span>(<span class="params"><span class="keyword">string</span> passKey</span>)    </span></span><br><span class="line"><span class="function"></span> &#123;    </span><br><span class="line">     WLAN_HOSTED_NETWORK_REASON failReason;    </span><br><span class="line"></span><br><span class="line">     WlanUtils.Throw_On_Win32_Error(wlanapi.WlanHostedNetworkSetSecondaryKey(<span class="keyword">this</span>._WlanHandle, (<span class="keyword">uint</span>)(passKey.Length + <span class="number">1</span>), passKey, <span class="literal">true</span>, <span class="literal">true</span>, <span class="keyword">out</span> failReason, IntPtr.Zero));    </span><br><span class="line"></span><br><span class="line">     <span class="keyword">return</span> failReason;    </span><br><span class="line"> &#125;    </span><br><span class="line"></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span> 查询状态   </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">public</span> WLAN_HOSTED_NETWORK_STATUS <span class="title">QueryStatus</span>(<span class="params"></span>)    </span></span><br><span class="line"><span class="function"></span> &#123;    </span><br><span class="line">     WLAN_HOSTED_NETWORK_STATUS status;    </span><br><span class="line">     WlanUtils.Throw_On_Win32_Error(wlanapi.WlanHostedNetworkQueryStatus(<span class="keyword">this</span>._WlanHandle, <span class="keyword">out</span> status, IntPtr.Zero));    </span><br><span class="line">     <span class="keyword">return</span> status;    </span><br><span class="line"> &#125;    </span><br><span class="line"></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span> 启动热点  </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">StartHostedNetwork</span>(<span class="params"></span>)    </span></span><br><span class="line"><span class="function"></span> &#123;    </span><br><span class="line">     <span class="keyword">try</span></span><br><span class="line">     &#123;    </span><br><span class="line">         <span class="keyword">this</span>.ForceStop();    </span><br><span class="line"></span><br><span class="line">         <span class="keyword">var</span> failReason = <span class="keyword">this</span>.StartUsing();    </span><br><span class="line">         <span class="keyword">if</span> (failReason != WLAN_HOSTED_NETWORK_REASON.wlan_hosted_network_reason_success)    </span><br><span class="line">         &#123;    </span><br><span class="line">             <span class="function">thrownew <span class="title">Exception</span>(<span class="params">“Could Not Start Hosted Network!nn” + failReason.ToString(</span>))</span>;    </span><br><span class="line">         &#125;    </span><br><span class="line">     &#125;    </span><br><span class="line">     <span class="keyword">catch</span></span><br><span class="line">     &#123;    </span><br><span class="line">         <span class="keyword">this</span>.ForceStop();    </span><br><span class="line">         <span class="keyword">throw</span>;    </span><br><span class="line">     &#125;    </span><br><span class="line"> &#125;    </span><br><span class="line"></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span> 设置ICS共享  </span></span><br><span class="line"> <span class="comment"><span class="doctag">///</span>   </span></span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">EnableInternetConnectionSharing</span>(<span class="params"><span class="keyword">string</span> Share</span>)    </span></span><br><span class="line"><span class="function"></span> &#123;    </span><br><span class="line">     <span class="keyword">try</span></span><br><span class="line">     &#123;    </span><br><span class="line">         <span class="keyword">var</span> connectionToShare = Share;    </span><br><span class="line">         <span class="keyword">var</span> sharedForConnection = “无线网络连接 <span class="number">2</span>”;    </span><br><span class="line"></span><br><span class="line">         <span class="keyword">var</span> manager = <span class="keyword">new</span> NetSharingManager();    </span><br><span class="line">         <span class="keyword">var</span> connections = manager.EnumEveryConnection;    </span><br><span class="line"></span><br><span class="line">         <span class="keyword">foreach</span> (INetConnection c <span class="keyword">in</span> connections)    </span><br><span class="line">         &#123;    </span><br><span class="line">             <span class="keyword">var</span> props = manager.NetConnectionProps[c];    </span><br><span class="line">             <span class="keyword">var</span> sharingCfg = manager.INetSharingConfigurationForINetConnection[c];    </span><br><span class="line">             <span class="keyword">if</span> (props.Name == connectionToShare)    </span><br><span class="line">             &#123;    </span><br><span class="line">                 sharingCfg.EnableSharing(tagSHARINGCONNECTIONTYPE.ICSSHARINGTYPE_PUBLIC);    </span><br><span class="line">             &#125;    </span><br><span class="line">             elseif (props.Name == sharedForConnection)    </span><br><span class="line">             &#123;    </span><br><span class="line">                 sharingCfg.EnableSharing(tagSHARINGCONNECTIONTYPE.ICSSHARINGTYPE_PRIVATE);    </span><br><span class="line">             &#125;    </span><br><span class="line">         &#125;    </span><br><span class="line">     &#125;    </span><br><span class="line">     <span class="keyword">catch</span> (Exception c)    </span><br><span class="line">     &#123;    </span><br><span class="line">         MessageBox.Show(c.Message);    </span><br><span class="line">     &#125;    </span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://iuu.me/controlwifibywin32api/" data-id="cjvp22zyq0007somhcxjr0lpo" class="article-share-link">Share</a>
+      <a data-url="https://iuu.me/controlwifibywin32api/" data-id="cjx4hk04b0004ufmh8isqebj0" class="article-share-link">Share</a>
       
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Win32-Wi-Fi/">Win32 Wi-Fi</a></li></ul>
+
     </footer>
 
   </div>
@@ -304,19 +82,19 @@
     
   <nav class="article-nav">
     
-      <a href="/win32apiinstallwindowsservice/" class="article-nav-link">
+      <a href="/luis-programmatic-apis-v2-0-helper/" class="article-nav-link">
         <strong class="article-nav-caption">Newer posts</strong>
         <div class="article-nav-title">
           
-            Win32API安装windows服务
+            LUIS Programmatic APIs v2.0 Helper
           
         </div>
       </a>
     
     
-      <a href="/lambda/" class="article-nav-link">
+      <a href="/consolidateateverystep/" class="article-nav-link">
         <strong class="article-nav-caption">Olde posts</strong>
-        <div class="article-nav-title">lambda表达式</div>
+        <div class="article-nav-title">步步为营</div>
       </a>
     
   </nav>
