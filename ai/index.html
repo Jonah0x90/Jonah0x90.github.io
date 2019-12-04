@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+    <meta name="keywords" content="iuu,jonah,哎呦呦,子非鱼安知鱼之乐">
+  
+  
+    <meta name="description" content="子非鱼，安知鱼之乐。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    AI智障浅论 |
+    
+    iUU</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-ai" class="article article-type-post" itemscope="" itemprop="blogPost" data-scroll-reveal="">
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      AI智障浅论
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/ai/" class="article-date">
+  <time datetime="2019-02-11T12:59:28.000Z" itemprop="datePublished">2019-02-11</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Code/">Code</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <hr>
+<p>说句大白话，现在目前市场上的所谓人工智能其实差不多都可以理解为人工智障233，<br><img src="https://i.imgur.com/9pdnnz6.png" alt="imgur"><br>各大厂商的人工智能在对话领域</p>
+<p>看过钢铁侠的朋友们可能都希望有一个“贾维斯”来帮助自己搭理日常和工作，但是就目前的条件制约和未来的发展趋势来看，真正实现落地离我们还是非常遥远。<br>提前人工智能，目前最乐意接受的方式就是通过对话来实现目地，而不是出现一个屏幕，戳戳这里，点点哪里。<br>对话交互方式是人类的自然语言。坦白来讲是一个黑箱。它不像现在GUI产品那样，所见即所得界面即是功能，大家都可以一目了然。<br>人类发出对话语言（input）和收到AI的回答（output），这中间的处理过程作为用户来讲是无法感知的。所以这个黑箱里面都是开发者自由发挥的天地。<br>虽然可能各大厂商的黑箱内容均不同，但是万变不离其宗，目前来讲处理核心就是听人话（语音识别）+说人话（会话管理）</p>
+<p>2015年突然火起来的机器深度学习和自然语言处理，让听人话技术门槛大大降低。</p>
+<p>NLU的普及让很多开发者都掌握了：意图识别+实体提取 杀手锏级别的技能。这意味这什么？下面举个简单的例子。</p>
+<p><em>本例使用到的服务</em></p>
+<ul>
+<li>LUIS<a href="https://luis.ai" target="_blank" rel="noopener">传送门</a></li>
+</ul>
+<blockquote>
+<p>预定出租车<br>我要打车<br>我现在想去xxx<br>现在有空车吗<br>等等等</p>
+</blockquote>
+<p>“自然的表达”有无穷多组合，不同的人有不同的表达方法。但是这些表达都是传递“乘出租车”这个意图，即便是不同的人都可以很准确的理解这些表达是指“乘出租车”这件事。<br>但是理解这么多不同的表达对机器来说显然不是那么容易。机器的专长是处理结构化的数据，例如关键字。这就要求了想要听懂终端用户表达的什么意图，必须在表达中准确的包含关键字信息。但是这也有很大的弊端在里面。比如我之前告诉机器“我想打车”，现在想要取消预定“我不想打车了”，机器仍会理解为你想要打车（关键字打车）。<br>NLU的出现为机器处理意图方面带来了飞跃的提升。通过训练可以让机器从多重表达语法中精准识别到用户的意图。<br><img src="https://i.imgur.com/DuvcnjG.png" alt="imgur"><br>这样一来，看上去就是机器能听懂人话了。<br><img src="https://i.imgur.com/V2waFnI.png" alt="imgur"><br>我们在出租车预定这个意图中添加了很多语料，然后通过训练，让机器更精准的理解意图。<br><img src="https://i.imgur.com/2am9a3z.png" alt="imgur"><br>同时我们还建立了的实体。实体是做什么用的呢？看下图你便一目了然。<br><img src="https://i.imgur.com/722S4on.png" alt="imgur"><br>自然语句被识别为“出租车.预定”意图。很nice，机器还在句子当中自动提取出来“一个小时以后”和“浦东机场”，这些分别指的是出发时间和目的地这两个概念（即实体）</p>
+<p>现在既然知道了你的意图，机器要决定该说什么话。而这个回答内容就是百家争鸣了。<br>目前主流的做法是由所谓的“对话管理”或者“会话管理”系统来做出决定。<br>这些所谓的系统核心就是<strong>“Slot filling”</strong>（填槽），大白话来说就是填表。<br>就跟你去银行办一张银行卡一样，柜台小姐姐会先让你填写一张表。当你全部填写好了，她才会给你办理业务。</p>
+<p>目前AI的<strong>多轮对话</strong>，也就是<strong>上下文情景</strong>管理，其实就是一个填表的过程。这个表格是针对某个场景下精心准备的。<br>看似自然的上下文对话，其实都是经过用心推敲后的完美展示。如果你的思维比较跳跃的话，所谓的上下文多轮对话就是个笑话。</p>
+<p><img src="https://i.imgur.com/XsETZSz.png" alt="imgur"><br><em>网上搜的一张图，侵权删。</em><br>我们就那这个图来简单说一下：（U-&gt;user A-&gt;ai）<br>U：看看明天的机票<br>A：（识别到明确的意图“订机票”，根据设计的表格，我现在还有2个空白需要用户填写）你想要去哪？<br>—-第一轮会话结束—-<br>U:我要去上海<br>A:（识别到目的地实体“上海”，完成填表动作，现在出发地需要用户填写。这里一般都是通过LBS来获取，不然会显的机器很傻。然后根据表格来执行查询，并反馈结果给用户）以下是明天可以搭乘的航班列表。<br>—-第二轮会话结束—-</p>
+<p>当然你也可以在这个表格上扩展更多例如航司的喜好，价格优惠的偏好之类的。<br>一般来讲表格的内容丰满度决定来对话的轮次，需要注意的是过于冗长的表格会让用户感到厌恶。一般多轮会话都会控制在2～4轮之内。<br>很多市面上的产品都宣称自己多轮对话可以支持到xx轮多么多么厉害之类的等等等等。相比现在大家都清楚了吧，轮数的产生是由填表的次数决定轮。单单以轮次的衡量产品水平完全是无稽之谈。<br>在达到目地并且不影响体验的前提下，对话的轮次越少越好。<br><img src="https://i.imgur.com/x6n39OO.png" alt="imgur"><br>之前的Google I/O发布了Duplex（谷歌智能助理）的录音demo，场景就是描述助理代替用户打电话去订餐厅，和店员沟通，帮助用户预定位子。其实一样是填表233。</p>
+<p>如果你给智能助手最初定义是执行用户的某项操作，那用户就会更直接的说出他的想法，而不是发散的随便问问，而他也会就执行任务本身的功能给予好评，而偏偏产品经理要把它说成像人一样思考，人们寄予很高的期望，所以这也就是人工智障的说法来源。</p>
+<p>哲学是科学的前瞻，哲学的认知伦和语义伦两大阶段是深刻理解和思考AI的基础，不了解这些哲人前瞻性的形而上学思考，很难催生出实在的AI科学，哲学最早的本体论阶段，催生了今天的主要科学。<br>所以今天的AI很像一个幼儿，还为期过早，很稚嫩完全没有思考力。人类两大认知方法，归纳总结和逻辑演绎，深度学习本质上只是一个归纳总结法，宇宙进化了几十亿年才有了人类理性推理的系统，我们却寄希望于一个基于硅基的才不到100年的技术就要实现落地的想法是非常不现实的。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://iuu.me/ai/" data-id="ck3qzl47s0000bpmhm08b1syf" class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ai/">ai</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/azure/">azure</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/document/">document</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/luis/">luis</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+    
+      <a href="/servicesdependedon/" class="article-nav-link">
+        <strong class="article-nav-caption">Olde posts</strong>
+        <div class="article-nav-title">Windows服务依赖关系注册</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  
+
+</article>
+
+
+
+  <div id="lv-container" data-id="city" data-uid="MTAyMC80NDIzOS8yMDc3Mg==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+</div>
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+    <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>&copy; 2019 iUU</li>
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="iUU"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">Home</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">Archives</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">Gallery</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">About</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>
